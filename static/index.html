@@ -1,0 +1,2004 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RDO Digital — C.Dias Instalações e Manutenção de Gases Medicinais</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f4c81">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RDO Digital">
+<style>
+  :root{
+    --primary:#0f4c81;
+    --primary-dark:#0a3760;
+    --accent:#1f8a70;
+    --bg:#eef2f6;
+    --card:#ffffff;
+    --border:#d7dee6;
+    --text:#1c2733;
+    --muted:#64758b;
+    --danger:#c0392b;
+    --header-bar:#3d4b5c;
+    --input-bg:#fbfcfd;
+    --overlay:rgba(15,20,26,.55);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --primary:#3d8bd6;
+      --primary-dark:#2f6fae;
+      --accent:#2fb894;
+      --bg:#10151c;
+      --card:#1a212b;
+      --border:#2b3542;
+      --text:#e7edf4;
+      --muted:#93a2b3;
+      --danger:#ff6b5e;
+      --header-bar:#1f2933;
+      --input-bg:#141b24;
+      --overlay:rgba(0,0,0,.65);
+    }
+  }
+  [data-theme="dark"]{
+    --primary:#3d8bd6;
+    --primary-dark:#2f6fae;
+    --accent:#2fb894;
+    --bg:#10151c;
+    --card:#1a212b;
+    --border:#2b3542;
+    --text:#e7edf4;
+    --muted:#93a2b3;
+    --danger:#ff6b5e;
+    --header-bar:#1f2933;
+    --input-bg:#141b24;
+    --overlay:rgba(0,0,0,.65);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding-bottom:60px;
+    transition:background .2s,color .2s;
+  }
+  .topbar{
+    background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+    color:#fff;
+    padding:16px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    position:sticky;
+    top:0;
+    z-index:50;
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+  }
+  .topbar h1{font-size:16px;margin:0;font-weight:600;}
+  .topbar .sub{font-size:11px;opacity:.85;margin-top:2px;}
+  .topbar-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  button{
+    font-family:inherit;
+    cursor:pointer;
+    border:none;
+    border-radius:8px;
+    padding:9px 14px;
+    font-size:13px;
+    font-weight:600;
+    transition:.15s;
+  }
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:#166f59;}
+  .btn-primary:disabled{opacity:.6;cursor:not-allowed;}
+  .btn-ghost{background:rgba(255,255,255,.15);color:#fff;}
+  .btn-ghost:hover{background:rgba(255,255,255,.28);}
+  .btn-light{background:#fff;color:var(--primary);}
+  .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}
+  .btn-outline:hover{background:var(--bg);}
+  .btn-sm{padding:6px 10px;font-size:12px;border-radius:6px;}
+  .btn-danger{background:#fdecea;color:var(--danger);}
+  .icon-btn{
+    width:34px;height:34px;border-radius:50%;
+    background:rgba(255,255,255,.15);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    padding:0;font-size:15px;
+  }
+  .icon-btn:hover{background:rgba(255,255,255,.28);}
+
+  .sync-status{
+    font-size:11px;font-weight:700;padding:6px 12px;border-radius:20px;
+    background:rgba(255,255,255,.15);color:#fff;display:flex;align-items:center;gap:6px;
+    white-space:nowrap;
+  }
+  .sync-status .dot{width:8px;height:8px;border-radius:50%;background:#5fd68a;flex:none;}
+  .sync-status.offline{background:rgba(192,57,43,.35);}
+  .sync-status.offline .dot{background:#ff8a7a;}
+  .sync-status.pending{background:rgba(224,168,0,.35);cursor:pointer;}
+  .sync-status.pending .dot{background:#ffd166;}
+
+  .servico-bar{
+    max-width:960px;margin:14px auto 0;padding:0 16px;
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  }
+  .servico-bar .info{
+    display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);flex-wrap:wrap;
+  }
+  .servico-bar .info strong{color:var(--text);}
+  .servico-tabs{display:flex;gap:6px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+  .servico-tabs button{
+    background:transparent;border:none;border-bottom:2px solid transparent;
+    border-radius:0;padding:8px 4px;margin-right:16px;color:var(--muted);font-weight:700;font-size:13px;
+  }
+  .servico-tabs button.active{color:var(--primary);border-bottom-color:var(--primary);}
+  .servico-list{max-height:45vh;overflow-y:auto;}
+  .servico-item{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:10px 8px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer;border-radius:8px;
+  }
+  .servico-item:hover{background:var(--bg);}
+  .servico-item .meta{color:var(--muted);font-size:11px;margin-top:2px;}
+  .servico-tab-panel{display:none;}
+  .servico-tab-panel.active{display:block;}
+
+  .wrap{max-width:960px;margin:20px auto;padding:0 16px;}
+  .card{
+    background:var(--card);
+    border-radius:12px;
+    box-shadow:0 1px 3px rgba(0,0,0,.08);
+    border:1px solid var(--border);
+    margin-bottom:18px;
+    overflow:hidden;
+  }
+  .section-title{
+    background:var(--header-bar);
+    color:#fff;
+    padding:10px 16px;
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:.3px;
+    text-transform:uppercase;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .section-body{padding:16px;}
+  .company-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    padding:18px;
+    flex-wrap:wrap;
+    gap:14px;
+  }
+  .company-name{font-size:19px;font-weight:800;color:var(--primary-dark);}
+  .company-sub{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5;}
+  .badge-type{display:flex;gap:8px;}
+  .type-toggle{
+    display:flex;
+    gap:6px;
+    border:1px solid var(--border);
+    padding:4px;
+    border-radius:10px;
+    background:var(--bg);
+  }
+  .type-toggle label{
+    padding:7px 14px;
+    border-radius:7px;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+    color:var(--muted);
+  }
+  .type-toggle input{display:none;}
+  .type-toggle input:checked + span{background:var(--primary);color:#fff;padding:7px 14px;border-radius:7px;display:inline-block;}
+
+  .grid{display:grid;gap:12px;}
+  .grid-2{grid-template-columns:1fr 1fr;}
+  .grid-3{grid-template-columns:1fr 1fr 1fr;}
+  .grid-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+  @media(max-width:640px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+  .field label{
+    display:block;
+    font-size:11px;
+    font-weight:700;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:.4px;
+    margin-bottom:5px;
+  }
+  .field input,.field select,.field textarea{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:14px;
+    font-family:inherit;
+    background:var(--input-bg);
+    color:var(--text);
+  }
+  .field textarea{resize:vertical;min-height:80px;line-height:1.6;}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:2px solid var(--primary);outline-offset:1px;}
+  .field.invalid input,.field.invalid textarea{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger);}
+
+  .dyn-textarea{
+    display:block;
+    width:100%;
+    padding:12px 14px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    font-size:14px;
+    font-family:inherit;
+    line-height:1.7;
+    background:var(--input-bg);
+    color:var(--text);
+    resize:vertical;
+    box-shadow:inset 0 1px 2px rgba(15,20,26,.04);
+    transition:border-color .15s,box-shadow .15s;
+  }
+  .dyn-textarea:focus{
+    outline:none;
+    border-color:var(--primary);
+    box-shadow:0 0 0 2px rgba(15,76,129,.15);
+    background:var(--card);
+  }
+  #f_atividades.invalid .dyn-textarea,#f_pendencias.invalid .dyn-textarea{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger);}
+
+  .weekday-row{display:flex;gap:6px;flex-wrap:wrap;}
+  .weekday-row span{
+    width:34px;height:34px;
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-weight:700;
+    font-size:13px;
+    color:var(--muted);
+    background:var(--bg);
+  }
+  .weekday-row span.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+
+  table.dyn{width:100%;border-collapse:collapse;font-size:13px;}
+  table.dyn th{
+    text-align:left;font-size:11px;text-transform:uppercase;color:var(--muted);
+    padding:6px 8px;border-bottom:2px solid var(--border);
+  }
+  table.dyn td{padding:5px 8px;border-bottom:1px solid var(--border);}
+  table.dyn input,table.dyn select{border:1px solid var(--border);border-radius:6px;padding:6px 8px;width:100%;font-size:13px;background:var(--input-bg);color:var(--text);font-family:inherit;}
+  .row-remove{background:transparent;color:var(--danger);font-size:16px;padding:2px 8px;}
+  .add-row{margin-top:10px;}
+
+  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  @media(max-width:640px){.photo-grid{grid-template-columns:1fr;}}
+  .photo-zone{
+    border:2px dashed var(--border);
+    border-radius:10px;
+    padding:12px;
+    text-align:center;
+    background:var(--bg);
+  }
+  .photo-zone h4{margin:0 0 8px;font-size:12px;color:var(--muted);text-transform:uppercase;}
+  .photo-zone .thumbs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .photo-zone .thumbs img{width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);}
+  .photo-zone input[type=file]{display:none;}
+
+  .sig-block{text-align:center;}
+  .sig-block canvas{
+    border:1px solid var(--border);
+    border-radius:8px;
+    width:100%;
+    height:130px;
+    touch-action:none;
+    background:#fff;
+    cursor:pointer;
+  }
+  .sig-block.invalid canvas{border-color:var(--danger);}
+  .sig-block .name{font-size:12px;font-weight:700;color:var(--muted);margin-top:6px;text-transform:uppercase;}
+  .sig-actions{margin-top:6px;}
+
+  .sig-modal{max-width:640px;}
+  .sig-modal-canvas{
+    width:100%;
+    height:55vh;
+    min-height:220px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:#fff;
+    touch-action:none;
+    display:block;
+  }
+
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .table-scroll table.dyn{min-width:520px;}
+
+  .save-box{margin-top:8px;}
+  .save-box button{width:100%;}
+  .missing-banner{
+    background:#fdecea;border:1px solid #f3b9b2;color:var(--danger);
+    border-radius:8px;padding:10px 12px;font-size:12px;margin-top:10px;line-height:1.6;
+  }
+  [data-theme="dark"] .missing-banner{background:#3a1e1c;border-color:#5c2c28;color:#ff9a8d;}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .missing-banner{background:#3a1e1c;border-color:#5c2c28;color:#ff9a8d;}}
+
+  .footer-note{text-align:center;color:var(--muted);font-size:11px;margin:24px 0 4px;}
+  .autosave-flag{font-size:11px;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:5px;justify-content:center;}
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:#1c2733;color:#fff;padding:10px 18px;border-radius:8px;
+    font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:200;max-width:90vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,-4px);}
+  ::placeholder{color:#a7b3c0;}
+
+  /* Overlays / modals */
+  .overlay{
+    position:fixed;inset:0;background:var(--overlay);
+    display:flex;align-items:center;justify-content:center;
+    z-index:150;padding:16px;
+  }
+  .overlay.hidden{display:none;}
+  .modal{
+    background:var(--card);border-radius:14px;border:1px solid var(--border);
+    max-width:420px;width:100%;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,.25);
+  }
+  .modal.wide{max-width:640px;}
+  .modal h2{margin:0 0 4px;font-size:18px;}
+  .modal p.hint{color:var(--muted);font-size:12px;margin:0 0 18px;}
+  .modal .field{margin-bottom:12px;}
+  .modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
+  .login-logo{
+    width:52px;height:52px;border-radius:12px;background:var(--primary);
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:20px;margin-bottom:14px;
+  }
+  .error-msg{color:var(--danger);font-size:12px;margin-top:8px;min-height:14px;}
+
+  .history-list{max-height:50vh;overflow-y:auto;}
+  .history-row{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;
+  }
+  .history-row .meta{color:var(--muted);font-size:11px;margin-top:2px;}
+  .history-empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 0;}
+
+  /* ---------- Mobile ---------- */
+  @media(max-width:640px){
+    .topbar{padding:12px 14px;}
+    .topbar h1{font-size:14px;}
+    .topbar .sub{font-size:10px;}
+    .topbar-actions{gap:6px;width:100%;}
+    .topbar-actions button{padding:7px 10px;font-size:12px;}
+    .topbar-actions .icon-btn{width:30px;height:30px;font-size:13px;}
+    .wrap{padding:0 10px;margin:12px auto;}
+    .section-body{padding:12px;}
+    .section-title{padding:9px 12px;font-size:12px;}
+    .company-head{padding:14px;}
+    .company-name{font-size:16px;}
+    .field input,.field select,.field textarea{font-size:16px;}
+    table.dyn input{font-size:13px;padding:5px 6px;}
+    .modal{padding:18px;max-width:none;width:calc(100% - 8px);}
+    .overlay{padding:10px;}
+    .history-row{flex-wrap:wrap;}
+    .weekday-row span{width:30px;height:30px;font-size:12px;}
+    .sig-modal-canvas{height:45vh;}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div class="overlay hidden" id="loginOverlay">
+  <div class="modal">
+    <div class="login-logo">CD</div>
+    <h2>Entrar</h2>
+    <p class="hint">C.Dias Instalações e Manutenção de Gases Medicinais</p>
+    <div class="field">
+      <label>Usuário</label>
+      <input id="loginUser" type="text" autocomplete="username" placeholder="admin">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••">
+    </div>
+    <div class="error-msg" id="loginError"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" style="width:100%;" onclick="doLogin()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE MODAL (after save) -->
+<div class="overlay hidden" id="shareOverlay">
+  <div class="modal">
+    <h2>Relatório salvo ✅</h2>
+    <p class="hint" id="shareHint">O PDF já foi salvo no seu dispositivo. Deseja compartilhar agora?</p>
+    <div class="modal-actions" style="justify-content:stretch;flex-direction:column;">
+      <button class="btn-primary" onclick="shareNative()">Compartilhar</button>
+      <button class="btn-outline" onclick="shareWhats()">Compartilhar via WhatsApp</button>
+      <button class="btn-outline" onclick="closeShare()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SERVIÇO MODAL -->
+<div class="overlay hidden" id="servicoOverlay">
+  <div class="modal wide">
+    <h2>Serviço</h2>
+    <p class="hint">Cada serviço tem sua própria numeração de folhas. Carregue um serviço em andamento ou crie um novo.</p>
+
+    <div class="servico-tabs">
+      <button id="tabCarregar" class="active" onclick="switchServicoTab('carregar')">Carregar Serviço</button>
+      <button id="tabNovo" onclick="switchServicoTab('novo')">Novo Serviço</button>
+    </div>
+
+    <div id="painelCarregar" class="servico-tab-panel active">
+      <div class="servico-list" id="servicoList"><div class="history-empty">Carregando...</div></div>
+    </div>
+
+    <div id="painelNovo" class="servico-tab-panel">
+      <div class="field">
+        <label>Nome do Serviço</label>
+        <input id="novoServicoNome" type="text" placeholder="Ex.: Manutenção Hospital Regional">
+      </div>
+      <div class="grid grid-2">
+        <div class="field"><label>Cliente (opcional)</label><input id="novoServicoCliente" type="text"></div>
+        <div class="field"><label>Contratante (opcional)</label><input id="novoServicoContratante" type="text"></div>
+      </div>
+      <div class="field"><label>Cidade (opcional)</label><input id="novoServicoCidade" type="text"></div>
+      <p class="hint" style="margin-top:0;">Esses dados opcionais só preenchem automaticamente a primeira folha do serviço — você pode alterá-los depois.</p>
+      <div class="error-msg" id="novoServicoError"></div>
+      <div class="modal-actions">
+        <button class="btn-primary" style="width:100%;" onclick="criarServico()">Criar e carregar</button>
+      </div>
+    </div>
+
+    <div class="modal-actions" id="servicoModalCloseRow" style="display:none;">
+      <button class="btn-outline" onclick="closeServicoModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SIGNATURE MODAL -->
+<div class="overlay hidden" id="sigModalOverlay">
+  <div class="modal sig-modal">
+    <h2 id="sigModalTitle">Assinatura</h2>
+    <p class="hint">Assine com o dedo ou o mouse na área abaixo.</p>
+    <canvas id="sigModalCanvas" class="sig-modal-canvas"></canvas>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="btn-outline" onclick="clearSigModal()">Limpar</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-outline" onclick="closeSigModal()">Cancelar</button>
+        <button class="btn-primary" onclick="confirmSigModal()">Concluir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div class="overlay hidden" id="historyOverlay">
+  <div class="modal wide">
+    <h2>Histórico de Relatórios</h2>
+    <p class="hint" id="historyHint">Folhas do serviço ativo, visíveis em qualquer dispositivo.</p>
+    <div class="history-list" id="historyList"><div class="history-empty">Carregando...</div></div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeHistory()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div>
+    <h1>Relatório Diário de Obra — Digital</h1>
+    <div class="sub">C.Dias Instalações e Manutenção de Gases Medicinais</div>
+  </div>
+  <div class="topbar-actions">
+    <span class="sync-status" id="syncStatus" onclick="trySyncQueue(true)" title="Status de conexão e sincronização">
+      <span class="dot"></span><span id="syncStatusText">Online</span>
+    </span>
+    <button class="icon-btn" id="themeBtn" onclick="cycleTheme()" title="Tema">🖥️</button>
+    <button class="btn-ghost" onclick="openHistory()">📜 Histórico</button>
+    <button class="btn-ghost" onclick="novoRelatorio()">＋ Nova Folha</button>
+    <button class="btn-light" onclick="gerarPreviewPDF()">Pré-visualizar PDF</button>
+    <button class="icon-btn" onclick="doLogout()" title="Sair">🚪</button>
+  </div>
+</div>
+
+<div class="servico-bar">
+  <div class="info">🗂️ Serviço ativo: <strong id="servicoNomeAtual">nenhum</strong></div>
+  <button class="btn-outline btn-sm" onclick="openServicoModal(true)">Trocar / Carregar Serviço</button>
+</div>
+
+<div class="wrap">
+
+  <div class="card" id="printArea">
+    <div class="company-head">
+      <div>
+        <div class="company-name">CDias Instalação e Manutenção de gases medicinais</div>
+        <div class="company-sub">Fone: (61) 99290-3202 &nbsp;·&nbsp; cdiasinstalacoesdegases@gmail.com</div>
+      </div>
+      <div>
+        <div class="badge-type">
+          <div class="type-toggle">
+            <label><input type="radio" name="tipo" value="Manutenção" checked><span>Manutenção</span></label>
+            <label><input type="radio" name="tipo" value="Obra"><span>Obra</span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-body" style="padding-top:0;">
+      <div class="grid grid-4">
+        <div class="field">
+          <label>Folha N° <span id="folhaOfflineFlag" style="display:none;color:var(--danger);">(offline)</span></label>
+          <input id="folha" type="text" readonly>
+        </div>
+        <div class="field"><label>Data</label><input id="data" type="date"></div>
+        <div class="field" style="grid-column:span 2;">
+          <label>Dia da Semana</label>
+          <div class="weekday-row" id="weekdayRow">
+            <span data-d="1">S</span><span data-d="2">T</span><span data-d="3">Q</span><span data-d="4">Q</span><span data-d="5">S</span><span data-d="6">S</span><span data-d="0">D</span>
+          </div>
+        </div>
+      </div>
+      <div class="missing-banner" id="missingBanner" style="display:none;"></div>
+
+      <div class="grid grid-2" style="margin-top:12px;">
+        <div class="field" id="f_contratante"><label>Contratante</label><input id="contratante" type="text" placeholder="Ex.: Hospital / Clínica contratante"></div>
+        <div class="field" id="f_cliente"><label>Cliente</label><input id="cliente" type="text" placeholder="Nome do cliente"></div>
+      </div>
+      <div class="grid grid-2" style="margin-top:12px;">
+        <div class="field" id="f_cidade"><label>Cidade</label><input id="cidade" type="text"></div>
+        <div class="field" id="f_descricao">
+          <label>Descrição</label>
+          <input id="descricao" type="text" placeholder="Resumo do serviço">
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Registro de Atividade do Dia</div>
+    <div class="section-body" id="f_atividades">
+      <textarea id="atividades" class="dyn-textarea" placeholder="Descreva as atividades realizadas..." style="min-height:140px;"></textarea>
+    </div>
+
+    <div class="section-title">Relação de Material Utilizado</div>
+    <div class="section-body" id="f_material">
+      <div class="table-scroll">
+        <table class="dyn" id="tblMaterial">
+          <thead><tr><th style="width:40%">Material</th><th style="width:15%">Qtd.</th><th style="width:15%">Valor</th><th style="width:20%">Unid.</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <button class="btn-outline btn-sm add-row" onclick="addMaterialRow()">＋ Adicionar material</button>
+    </div>
+
+    <div class="section-title">Relatório de Pendências</div>
+    <div class="section-body" id="f_pendencias">
+      <textarea id="pendencias" class="dyn-textarea" placeholder="Pendências para próxima visita... (digite &quot;Nenhuma&quot; se não houver)"></textarea>
+    </div>
+
+    <div class="section-title">Relação de Pessoal Efetivo da Obra</div>
+    <div class="section-body" id="f_pessoal">
+      <div class="table-scroll">
+        <table class="dyn" id="tblPessoal">
+          <thead><tr><th style="width:35%">Nome</th><th style="width:25%">Função</th><th style="width:15%">Das</th><th style="width:15%">Às</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <button class="btn-outline btn-sm add-row" onclick="addPessoalRow()">＋ Adicionar pessoa</button>
+      <div class="grid grid-2" style="margin-top:14px;">
+        <div class="field" id="f_totalHoras"><label>Total de Horas (dia) — calculado automaticamente</label><input id="totalHoras" type="text" placeholder="Preencha Das/Às acima" readonly></div>
+      </div>
+    </div>
+
+    <div class="section-title">Registro Fotográfico</div>
+    <div class="section-body">
+      <div class="photo-grid">
+        <div class="photo-zone">
+          <h4>Antes</h4>
+          <button class="btn-outline btn-sm" onclick="document.getElementById('foto_antes').click()">📷 Adicionar foto</button>
+          <input type="file" id="foto_antes" accept="image/*" capture="environment" multiple onchange="addPhotos('antes',this)">
+          <div class="thumbs" id="thumbs_antes"></div>
+        </div>
+        <div class="photo-zone">
+          <h4>Durante</h4>
+          <button class="btn-outline btn-sm" onclick="document.getElementById('foto_durante').click()">📷 Adicionar foto</button>
+          <input type="file" id="foto_durante" accept="image/*" capture="environment" multiple onchange="addPhotos('durante',this)">
+          <div class="thumbs" id="thumbs_durante"></div>
+        </div>
+        <div class="photo-zone">
+          <h4>Depois</h4>
+          <button class="btn-outline btn-sm" onclick="document.getElementById('foto_depois').click()">📷 Adicionar foto</button>
+          <input type="file" id="foto_depois" accept="image/*" capture="environment" multiple onchange="addPhotos('depois',this)">
+          <div class="thumbs" id="thumbs_depois"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Assinaturas</div>
+    <div class="section-body">
+      <div class="grid grid-3">
+        <div class="sig-block" id="f_sig_empreita">
+          <canvas id="sig_empreita"></canvas>
+          <div class="name">Empreita</div>
+          <div class="sig-actions"><button class="btn-outline btn-sm" onclick="clearSig('sig_empreita')">Limpar</button></div>
+        </div>
+        <div class="sig-block" id="f_sig_cliente">
+          <canvas id="sig_cliente"></canvas>
+          <div class="name">Cliente</div>
+          <div class="sig-actions"><button class="btn-outline btn-sm" onclick="clearSig('sig_cliente')">Limpar</button></div>
+        </div>
+        <div class="sig-block" id="f_sig_tecnico">
+          <canvas id="sig_tecnico"></canvas>
+          <div class="name">Técnico Responsável</div>
+          <div class="sig-actions"><button class="btn-outline btn-sm" onclick="clearSig('sig_tecnico')">Limpar</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-body" style="text-align:center;">
+      <button class="btn-primary" id="btnSalvar" onclick="salvarRDO()" style="width:100%;max-width:480px;padding:16px;font-size:16px;border-radius:10px;">💾 Salvar Relatório</button>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    <span class="autosave-flag">● rascunho salvo automaticamente neste dispositivo até você clicar em Salvar</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+const API_BASE = '';
+const STORAGE_KEY = 'rdo_draft_v2';
+const TOKEN_KEY = 'rdo_token';
+const THEME_KEY = 'rdo_theme';
+const SERVICO_ID_KEY = 'rdo_servico_id';
+const SERVICO_NOME_KEY = 'rdo_servico_nome';
+let lastGeneratedPdf = null; // {blob, filename, base64}
+let activeServicoId = null;
+let activeServicoNome = null;
+let folhaIsProvisional = false;
+
+// ---------- PWA offline: fila de sincronização (IndexedDB) ----------
+const DB_NAME = 'rdo_offline_db';
+const DB_VERSION = 1;
+const STORE_QUEUE = 'queue';
+let syncingQueue = false;
+
+function openQueueDB(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = ()=>{
+      const db = req.result;
+      if(!db.objectStoreNames.contains(STORE_QUEUE)){
+        db.createObjectStore(STORE_QUEUE, { keyPath:'key', autoIncrement:true });
+      }
+    };
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+function queueAdd(payload){
+  return openQueueDB().then(db => new Promise((resolve, reject)=>{
+    const tx = db.transaction(STORE_QUEUE, 'readwrite');
+    tx.objectStore(STORE_QUEUE).add({ payload, queuedAt: new Date().toISOString() });
+    tx.oncomplete = resolve;
+    tx.onerror = ()=> reject(tx.error);
+  }));
+}
+function queueGetAll(){
+  return openQueueDB().then(db => new Promise((resolve, reject)=>{
+    const tx = db.transaction(STORE_QUEUE, 'readonly');
+    const req = tx.objectStore(STORE_QUEUE).getAll();
+    req.onsuccess = ()=> resolve(req.result || []);
+    req.onerror = ()=> reject(req.error);
+  }));
+}
+function queueDelete(key){
+  return openQueueDB().then(db => new Promise((resolve, reject)=>{
+    const tx = db.transaction(STORE_QUEUE, 'readwrite');
+    tx.objectStore(STORE_QUEUE).delete(key);
+    tx.oncomplete = resolve;
+    tx.onerror = ()=> reject(tx.error);
+  }));
+}
+function queueCount(){
+  return openQueueDB().then(db => new Promise((resolve, reject)=>{
+    const tx = db.transaction(STORE_QUEUE, 'readonly');
+    const req = tx.objectStore(STORE_QUEUE).count();
+    req.onsuccess = ()=> resolve(req.result || 0);
+    req.onerror = ()=> reject(req.error);
+  }));
+}
+function folhaCacheKey(servicoId){ return 'rdo_last_folha_' + servicoId; }
+
+async function queueOfflineRdo(payload){
+  await queueAdd(payload);
+  if(activeServicoId){
+    const provisional = parseInt(String(payload.folha).replace(/\D/g,''), 10) || 0;
+    if(provisional) localStorage.setItem(folhaCacheKey(activeServicoId), String(provisional));
+  }
+}
+
+async function updateSyncStatus(){
+  const el = document.getElementById('syncStatus');
+  const txt = document.getElementById('syncStatusText');
+  if(!el || !txt) return;
+  let count = 0;
+  try{ count = await queueCount(); }catch(e){}
+  el.classList.remove('offline','pending');
+  if(!navigator.onLine){
+    el.classList.add('offline');
+    txt.textContent = count > 0 ? `Offline · ${count} pendente(s)` : 'Offline';
+  } else if(count > 0){
+    el.classList.add('pending');
+    txt.textContent = `${count} pendente(s) — toque p/ sincronizar`;
+  } else {
+    txt.textContent = 'Online';
+  }
+}
+
+async function trySyncQueue(manual){
+  if(syncingQueue) return;
+  if(!navigator.onLine){
+    if(manual) toast('Sem conexão no momento.');
+    updateSyncStatus();
+    return;
+  }
+  syncingQueue = true;
+  try{
+    const items = await queueGetAll();
+    if(items.length === 0){
+      if(manual) toast('Nada pendente para sincronizar.');
+      return;
+    }
+    if(manual) toast(`Sincronizando ${items.length} relatório(s) pendente(s)...`);
+    let sentCount = 0;
+    for(const item of items){
+      let res, data;
+      try{
+        res = await fetch(API_BASE + '/api/rdos', {
+          method:'POST', headers: authHeaders(), body: JSON.stringify(item.payload)
+        });
+        data = await res.json();
+      }catch(netErr){
+        break; // ainda sem rede de verdade — tenta novamente mais tarde
+      }
+      if(res.ok){
+        await queueDelete(item.key);
+        sentCount++;
+      } else if(res.status === 401){
+        break; // sessão expirada, aguarda novo login
+      } else {
+        await queueDelete(item.key);
+        toast('Um relatório pendente foi rejeitado pelo servidor e descartado: ' + (data.error || ''));
+      }
+    }
+    if(sentCount > 0) toast(`${sentCount} relatório(s) sincronizado(s) com sucesso.`);
+  } finally {
+    syncingQueue = false;
+    updateSyncStatus();
+  }
+}
+
+window.addEventListener('online', ()=>{ updateSyncStatus(); trySyncQueue(false); });
+window.addEventListener('offline', updateSyncStatus);
+setInterval(()=> trySyncQueue(false), 30000);
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+function authHeaders(json=true){
+  const h = { 'Authorization': 'Bearer ' + (localStorage.getItem(TOKEN_KEY) || '') };
+  if(json) h['Content-Type'] = 'application/json';
+  return h;
+}
+
+// ---------- Tema ----------
+function applyTheme(mode){
+  if(mode === 'system'){
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', mode);
+  }
+  const icon = mode === 'system' ? '🖥️' : (mode === 'dark' ? '🌙' : '☀️');
+  document.getElementById('themeBtn').textContent = icon;
+}
+function cycleTheme(){
+  const order = ['system','light','dark'];
+  const current = localStorage.getItem(THEME_KEY) || 'system';
+  const next = order[(order.indexOf(current)+1) % order.length];
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+}
+applyTheme(localStorage.getItem(THEME_KEY) || 'system');
+
+// ---------- Login ----------
+function showLogin(){
+  document.getElementById('loginOverlay').classList.remove('hidden');
+}
+function hideLogin(){
+  document.getElementById('loginOverlay').classList.add('hidden');
+}
+async function doLogin(){
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+  err.textContent = '';
+  try{
+    const res = await fetch(API_BASE + '/api/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await res.json();
+    if(!res.ok){ err.textContent = data.error || 'Falha no login'; return; }
+    localStorage.setItem(TOKEN_KEY, data.token);
+    hideLogin();
+    initApp();
+  }catch(e){
+    err.textContent = 'Não foi possível conectar ao servidor.';
+  }
+}
+async function doLogout(){
+  try{ await fetch(API_BASE + '/api/logout', {method:'POST', headers: authHeaders()}); }catch(e){}
+  localStorage.removeItem(TOKEN_KEY);
+  location.reload();
+}
+async function checkSession(){
+  const token = localStorage.getItem(TOKEN_KEY);
+  if(!token){ showLogin(); return false; }
+  try{
+    const res = await fetch(API_BASE + '/api/me', {headers: authHeaders(false)});
+    if(res.status === 401){ showLogin(); return false; }
+    return true;
+  }catch(e){
+    // sem rede — confia na sessão salva localmente e segue offline
+    return true;
+  }
+}
+
+// ---------- Serviço ativo ----------
+function setActiveServico(id, nome){
+  activeServicoId = id;
+  activeServicoNome = nome;
+  localStorage.setItem(SERVICO_ID_KEY, id);
+  localStorage.setItem(SERVICO_NOME_KEY, nome);
+  document.getElementById('servicoNomeAtual').textContent = nome;
+}
+function restoreActiveServico(){
+  const id = localStorage.getItem(SERVICO_ID_KEY);
+  const nome = localStorage.getItem(SERVICO_NOME_KEY);
+  if(id && nome){
+    activeServicoId = parseInt(id, 10);
+    activeServicoNome = nome;
+    document.getElementById('servicoNomeAtual').textContent = nome;
+    return true;
+  }
+  return false;
+}
+function switchServicoTab(tab){
+  document.getElementById('tabCarregar').classList.toggle('active', tab === 'carregar');
+  document.getElementById('tabNovo').classList.toggle('active', tab === 'novo');
+  document.getElementById('painelCarregar').classList.toggle('active', tab === 'carregar');
+  document.getElementById('painelNovo').classList.toggle('active', tab === 'novo');
+}
+function openServicoModal(closable){
+  document.getElementById('servicoModalCloseRow').style.display = closable ? 'flex' : 'none';
+  switchServicoTab('carregar');
+  document.getElementById('servicoOverlay').classList.remove('hidden');
+  loadServicosList();
+}
+function closeServicoModal(){
+  document.getElementById('servicoOverlay').classList.add('hidden');
+}
+async function loadServicosList(){
+  const box = document.getElementById('servicoList');
+  box.innerHTML = '<div class="history-empty">Carregando...</div>';
+  try{
+    const res = await fetch(API_BASE + '/api/servicos', {headers: authHeaders(false)});
+    const rows = await res.json();
+    if(!res.ok) throw new Error(rows.error || 'erro');
+    if(rows.length === 0){
+      box.innerHTML = '<div class="history-empty">Nenhum serviço cadastrado ainda. Crie um em "Novo Serviço".</div>';
+      return;
+    }
+    box.innerHTML = '';
+    rows.forEach(s=>{
+      const div = document.createElement('div');
+      div.className = 'servico-item';
+      div.onclick = ()=> selectServico(s.id, s.nome, s.cliente, s.contratante, s.cidade);
+      div.innerHTML = `
+        <div>
+          <strong>${s.nome}</strong>
+          <div class="meta">${s.cliente || 'sem cliente'} · ${s.total_folhas} folha(s) · criado por ${s.created_by || ''}</div>
+        </div>
+        <span>▸</span>
+      `;
+      box.appendChild(div);
+    });
+  }catch(e){
+    box.innerHTML = '<div class="history-empty">Não foi possível carregar a lista de serviços.</div>';
+  }
+}
+async function selectServico(id, nome, cliente, contratante, cidade){
+  setActiveServico(id, nome);
+  closeServicoModal();
+  clearFormState();
+  if(cliente) document.getElementById('cliente').value = cliente;
+  if(contratante) document.getElementById('contratante').value = contratante;
+  if(cidade) document.getElementById('cidade').value = cidade;
+  saveDraft();
+  await fetchNextFolha();
+  toast(`Serviço "${nome}" carregado`);
+}
+async function criarServico(){
+  const nome = document.getElementById('novoServicoNome').value.trim();
+  const err = document.getElementById('novoServicoError');
+  err.textContent = '';
+  if(!nome){ err.textContent = 'Informe o nome do serviço.'; return; }
+  const cliente = document.getElementById('novoServicoCliente').value.trim();
+  const contratante = document.getElementById('novoServicoContratante').value.trim();
+  const cidade = document.getElementById('novoServicoCidade').value.trim();
+  try{
+    const res = await fetch(API_BASE + '/api/servicos', {
+      method:'POST', headers: authHeaders(),
+      body: JSON.stringify({ nome, cliente, contratante, cidade })
+    });
+    const data = await res.json();
+    if(!res.ok){ err.textContent = data.error || 'Erro ao criar serviço'; return; }
+    document.getElementById('novoServicoNome').value = '';
+    document.getElementById('novoServicoCliente').value = '';
+    document.getElementById('novoServicoContratante').value = '';
+    document.getElementById('novoServicoCidade').value = '';
+    await selectServico(data.id, data.nome, cliente, contratante, cidade);
+  }catch(e){
+    err.textContent = 'Não foi possível conectar ao servidor.';
+  }
+}
+
+// ---------- Folha N° (vem sempre do servidor, por serviço; com fallback offline) ----------
+function setFolhaOfflineFlag(on){
+  folhaIsProvisional = on;
+  const flag = document.getElementById('folhaOfflineFlag');
+  if(flag) flag.style.display = on ? 'inline' : 'none';
+}
+async function fetchNextFolha(){
+  setFolhaOfflineFlag(false);
+  if(!activeServicoId){
+    document.getElementById('folha').value = '----';
+    return;
+  }
+  try{
+    const res = await fetch(API_BASE + '/api/next-folha?servico_id=' + activeServicoId, {headers: authHeaders(false)});
+    const data = await res.json();
+    document.getElementById('folha').value = String(data.folha).padStart(4,'0');
+    localStorage.setItem(folhaCacheKey(activeServicoId), String(data.folha - 1));
+  }catch(e){
+    const lastKnown = parseInt(localStorage.getItem(folhaCacheKey(activeServicoId)) || '0', 10);
+    const provisional = lastKnown + 1;
+    document.getElementById('folha').value = String(provisional).padStart(4,'0');
+    setFolhaOfflineFlag(true);
+    toast('Sem conexão — número de folha provisório, será confirmado ao sincronizar.');
+  }
+}
+
+// ---------- Data / dia da semana ----------
+function setDataHoje(){
+  const el = document.getElementById('data');
+  const today = new Date();
+  el.value = today.toISOString().slice(0,10);
+  updateWeekday();
+}
+function updateWeekday(){
+  const val = document.getElementById('data').value;
+  if(!val) return;
+  const d = new Date(val + 'T00:00:00');
+  const day = d.getDay();
+  document.querySelectorAll('#weekdayRow span').forEach(s=>{
+    s.classList.toggle('active', parseInt(s.dataset.d,10) === day);
+  });
+}
+document.getElementById('data').addEventListener('change', updateWeekday);
+
+
+// ---------- Tabelas dinâmicas: Material ----------
+const UNIDADES = ['un','m','cm','kg','g','L','ml','cx','pct','rolo','barra','kit'];
+const UNIDADE_LABELS = {
+  un:'Unidade(s)', m:'Metros', cm:'Centímetros', kg:'Quilogramas', g:'Gramas',
+  L:'Litros', ml:'Mililitros', cx:'Caixa(s)', pct:'Pacote(s)', rolo:'Rolo(s)',
+  barra:'Barra(s)', kit:'Kit(s)'
+};
+function formatValorUnid(valor, unid){
+  const label = UNIDADE_LABELS[unid] || unid || '';
+  if(valor && label) return `${valor} ${label}`;
+  return label || valor || '';
+}
+function addMaterialRow(desc='', qtd='', valor='', unid=''){
+  const tbody = document.querySelector('#tblMaterial tbody');
+  const tr = document.createElement('tr');
+  const opts = UNIDADES.map(u=>`<option value="${u}"${u===unid?' selected':''}>${u}</option>`).join('');
+  tr.innerHTML = `
+    <td><input type="text" class="mat-desc" value="${desc}" placeholder="Ex.: Tubo de cobre 3/8"></td>
+    <td><input type="text" class="mat-qtd" inputmode="numeric" value="${qtd}" placeholder="0"></td>
+    <td><input type="text" class="mat-valor" inputmode="numeric" value="${valor}" placeholder="Ex.: 2"></td>
+    <td>
+      <select class="mat-unid">
+        <option value="">--</option>
+        ${opts}
+      </select>
+    </td>
+    <td><button type="button" class="row-remove" onclick="this.closest('tr').remove(); saveDraft();">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+  ['mat-qtd', 'mat-valor'].forEach(cls=>{
+    const input = tr.querySelector('.' + cls);
+    input.addEventListener('input', ()=>{
+      input.value = input.value.replace(/\D/g, '');
+      saveDraft();
+    });
+  });
+  tr.querySelector('.mat-desc').addEventListener('input', saveDraft);
+  tr.querySelector('.mat-unid').addEventListener('change', saveDraft);
+}
+
+// ---------- Tabelas dinâmicas: Pessoal ----------
+function formatHora(raw){
+  const digitsIn = raw.replace(/\D/g, '').slice(0, 4);
+  let out = '';
+  for(let i = 0; i < digitsIn.length; i++){
+    let d = digitsIn[i];
+    if(i === 0){
+      if(d > '2') d = '2';
+    } else if(i === 1){
+      if(out[0] === '2' && d > '4') d = '4';
+    } else if(i === 2){
+      if(d > '5') d = '5';
+    }
+    out += d;
+  }
+  if(out.length <= 2) return out;
+  return out.slice(0, 2) + ':' + out.slice(2);
+}
+function minutosDoHorario(hora){
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hora || '');
+  if(!m) return null;
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+}
+function formatarDuracao(totalMin){
+  if(!totalMin || totalMin <= 0) return '';
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2,'0')}min`;
+}
+function recalcularTotalHoras(){
+  let maxMin = 0;
+  document.querySelectorAll('#tblPessoal tbody tr').forEach(tr=>{
+    const dasMin = minutosDoHorario(tr.querySelector('.p-das').value);
+    const asMin = minutosDoHorario(tr.querySelector('.p-as').value);
+    if(dasMin === null || asMin === null) return;
+    let diff = asMin - dasMin;
+    if(diff < 0) diff += 24 * 60;
+    if(diff > maxMin) maxMin = diff;
+  });
+  document.getElementById('totalHoras').value = formatarDuracao(maxMin);
+  saveDraft();
+}
+function addPessoalRow(nome='', funcao='', das='', as_=''){
+  const tbody = document.querySelector('#tblPessoal tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" class="p-nome" value="${nome}"></td>
+    <td><input type="text" class="p-funcao" value="${funcao}"></td>
+    <td><input type="text" class="p-das" inputmode="numeric" maxlength="5" value="${das}" placeholder="07:00"></td>
+    <td><input type="text" class="p-as" inputmode="numeric" maxlength="5" value="${as_}" placeholder="17:00"></td>
+    <td><button type="button" class="row-remove" onclick="this.closest('tr').remove(); recalcularTotalHoras();">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+  ['p-das', 'p-as'].forEach(cls=>{
+    const input = tr.querySelector('.' + cls);
+    input.addEventListener('input', ()=>{
+      input.value = formatHora(input.value);
+      recalcularTotalHoras();
+    });
+  });
+  tr.querySelector('.p-nome').addEventListener('input', saveDraft);
+  tr.querySelector('.p-funcao').addEventListener('input', saveDraft);
+  recalcularTotalHoras();
+}
+
+// ---------- Fotos ----------
+const photos = { antes:[], durante:[], depois:[] };
+function addPhotos(cat, input){
+  const files = Array.from(input.files || []);
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      photos[cat].push(e.target.result);
+      renderThumbs(cat);
+      saveDraft();
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+function renderThumbs(cat){
+  const box = document.getElementById('thumbs_' + cat);
+  box.innerHTML = '';
+  photos[cat].forEach((src, idx)=>{
+    const img = document.createElement('img');
+    img.src = src;
+    img.title = 'Clique para remover';
+    img.onclick = ()=>{ photos[cat].splice(idx,1); renderThumbs(cat); saveDraft(); };
+    box.appendChild(img);
+  });
+}
+
+// ---------- Assinaturas (canvas pequeno = preview; toque abre tela cheia) ----------
+const sigCanvases = {};
+const sigHasDrawn = { sig_empreita:false, sig_cliente:false, sig_tecnico:false };
+const SIG_LABELS = { sig_empreita:'Empreita', sig_cliente:'Cliente', sig_tecnico:'Técnico Responsável' };
+
+const IS_TOUCH_DEVICE = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+
+function drawSigPlaceholder(canvas){
+  const ratio = window.devicePixelRatio || 1;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width / ratio, h = canvas.height / ratio;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.fillStyle = '#a7b3c0';
+  ctx.font = '13px Segoe UI, Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(IS_TOUCH_DEVICE ? '👆 Toque 2x para assinar' : '👆 Clique para assinar', w / 2, h / 2);
+  ctx.restore();
+}
+
+function initSig(id){
+  const canvas = document.getElementById(id);
+  const ratio = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+  canvas.getContext('2d').scale(ratio, ratio);
+  if(IS_TOUCH_DEVICE){
+    // No mobile, o primeiro toque muitas vezes "engole" o próprio gesto de assinar
+    // (o canvas do modal só existe depois que ele abre), então exige um duplo toque
+    // para abrir — o usuário assina de fato já dentro do modal.
+    canvas.addEventListener('dblclick', (e)=>{ e.preventDefault(); openSigModal(id); });
+  } else {
+    canvas.addEventListener('pointerdown', (e)=>{ e.preventDefault(); openSigModal(id); });
+  }
+  sigCanvases[id] = canvas;
+  drawSigPlaceholder(canvas);
+}
+function clearSig(id){
+  const canvas = document.getElementById(id);
+  drawSigPlaceholder(canvas);
+  sigHasDrawn[id] = false;
+  saveDraft();
+}
+
+// ---------- Modal de assinatura em tela cheia ----------
+let sigModalTarget = null;
+let sigModalHasDrawn = false;
+let sigModalDrawing = false;
+let sigModalLast = null;
+
+function openSigModal(id){
+  sigModalTarget = id;
+  document.getElementById('sigModalTitle').textContent = 'Assinatura — ' + (SIG_LABELS[id] || '');
+  document.getElementById('sigModalOverlay').classList.remove('hidden');
+  requestAnimationFrame(()=> setupSigModalCanvas(id));
+}
+
+function setupSigModalCanvas(id){
+  const canvas = document.getElementById('sigModalCanvas');
+  const ratio = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(ratio, ratio);
+  ctx.strokeStyle = '#1c2733';
+  ctx.lineWidth = 2.6;
+  ctx.lineCap = 'round';
+  sigModalHasDrawn = false;
+
+  if(sigHasDrawn[id]){
+    const img = new Image();
+    img.onload = ()=>{
+      const w = rect.width, h = rect.height;
+      const scale = Math.min(w / img.width, h / img.height);
+      const dw = img.width * scale, dh = img.height * scale;
+      ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+      sigModalHasDrawn = true;
+    };
+    img.src = sigCanvases[id].toDataURL();
+  }
+
+  function pos(e){
+    const r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+  function start(e){
+    sigModalDrawing = true;
+    sigModalLast = pos(e);
+    try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+    e.preventDefault();
+  }
+  function move(e){
+    if(!sigModalDrawing) return;
+    const p = pos(e);
+    ctx.beginPath();
+    ctx.moveTo(sigModalLast.x, sigModalLast.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    sigModalLast = p;
+    sigModalHasDrawn = true;
+    e.preventDefault();
+  }
+  function end(e){
+    sigModalDrawing = false;
+    try{ canvas.releasePointerCapture(e.pointerId); }catch(err){}
+  }
+
+  canvas.onpointerdown = start;
+  canvas.onpointermove = move;
+  canvas.onpointerup = end;
+  canvas.onpointercancel = end;
+}
+
+function clearSigModal(){
+  const canvas = document.getElementById('sigModalCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  sigModalHasDrawn = false;
+}
+
+function closeSigModal(){
+  document.getElementById('sigModalOverlay').classList.add('hidden');
+  sigModalTarget = null;
+}
+
+function confirmSigModal(){
+  const modalCanvas = document.getElementById('sigModalCanvas');
+  const id = sigModalTarget;
+  if(!id) return;
+  const small = sigCanvases[id];
+  const sctx = small.getContext('2d');
+  sctx.clearRect(0, 0, small.width, small.height);
+  if(sigModalHasDrawn){
+    const scale = Math.min(small.width / modalCanvas.width, small.height / modalCanvas.height);
+    const dw = modalCanvas.width * scale, dh = modalCanvas.height * scale;
+    const dx = (small.width - dw) / 2, dy = (small.height - dh) / 2;
+    sctx.drawImage(modalCanvas, dx, dy, dw, dh);
+    sigHasDrawn[id] = true;
+  } else {
+    drawSigPlaceholder(small);
+    sigHasDrawn[id] = false;
+  }
+  saveDraft();
+  closeSigModal();
+}
+
+// ---------- Coletar / rascunho local ----------
+function collectData(){
+  return {
+    servico_id: activeServicoId,
+    tipo: document.querySelector('input[name=tipo]:checked')?.value,
+    folha: document.getElementById('folha').value,
+    data: document.getElementById('data').value,
+    contratante: document.getElementById('contratante').value,
+    cliente: document.getElementById('cliente').value,
+    cidade: document.getElementById('cidade').value,
+    descricao: document.getElementById('descricao').value,
+    atividades: document.getElementById('atividades').value,
+    pendencias: document.getElementById('pendencias').value,
+    totalHoras: document.getElementById('totalHoras').value,
+    material: Array.from(document.querySelectorAll('#tblMaterial tbody tr')).map(tr=>({
+      desc: tr.querySelector('.mat-desc').value,
+      qtd: tr.querySelector('.mat-qtd').value,
+      valor: tr.querySelector('.mat-valor').value,
+      unid: tr.querySelector('.mat-unid').value
+    })),
+    pessoal: Array.from(document.querySelectorAll('#tblPessoal tbody tr')).map(tr=>({
+      nome: tr.querySelector('.p-nome').value,
+      funcao: tr.querySelector('.p-funcao').value,
+      das: tr.querySelector('.p-das').value,
+      as_: tr.querySelector('.p-as').value
+    })),
+    photos: photos,
+    signatures: Object.fromEntries(Object.keys(sigCanvases).map(id=>[id, sigHasDrawn[id] ? sigCanvases[id].toDataURL() : null]))
+  };
+}
+function saveDraft(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(collectData())); }catch(e){}
+}
+function loadDraft(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(!raw) return false;
+  try{
+    const d = JSON.parse(raw);
+    document.getElementById('data').value = d.data || '';
+    document.getElementById('contratante').value = d.contratante || '';
+    document.getElementById('cliente').value = d.cliente || '';
+    document.getElementById('cidade').value = d.cidade || '';
+    document.getElementById('descricao').value = d.descricao || '';
+    document.getElementById('atividades').value = d.atividades || '';
+    document.getElementById('pendencias').value = d.pendencias || '';
+    document.getElementById('totalHoras').value = d.totalHoras || '';
+    if(d.tipo){
+      const r = document.querySelector(`input[name=tipo][value="${d.tipo}"]`);
+      if(r) r.checked = true;
+    }
+    (d.material||[]).forEach(m=>addMaterialRow(m.desc,m.qtd,m.valor,m.unid));
+    (d.pessoal||[]).forEach(p=>addPessoalRow(p.nome,p.funcao,p.das,p.as_));
+    if(d.photos){
+      Object.keys(d.photos).forEach(cat=>{
+        photos[cat] = d.photos[cat] || [];
+        renderThumbs(cat);
+      });
+    }
+    if(d.signatures){
+      Object.keys(d.signatures).forEach(id=>{
+        const dataUrl = d.signatures[id];
+        const canvas = sigCanvases[id];
+        if(dataUrl && canvas){
+          const img = new Image();
+          img.onload = ()=>{
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            sigHasDrawn[id] = true;
+          };
+          img.src = dataUrl;
+        }
+      });
+    }
+    updateWeekday();
+    return true;
+  }catch(e){ return false; }
+}
+function clearFormState(){
+  document.getElementById('contratante').value = '';
+  document.getElementById('cliente').value = '';
+  document.getElementById('cidade').value = '';
+  document.getElementById('descricao').value = '';
+  document.getElementById('atividades').value = '';
+  document.getElementById('pendencias').value = '';
+  document.getElementById('totalHoras').value = '';
+  document.querySelector('input[name=tipo][value="Manutenção"]').checked = true;
+  document.querySelector('#tblMaterial tbody').innerHTML = '';
+  document.querySelector('#tblPessoal tbody').innerHTML = '';
+  addMaterialRow(); addPessoalRow();
+  photos.antes = []; photos.durante = []; photos.depois = [];
+  ['antes','durante','depois'].forEach(renderThumbs);
+  ['sig_empreita','sig_cliente','sig_tecnico'].forEach(clearSig);
+  document.getElementById('missingBanner').style.display = 'none';
+  document.querySelectorAll('.invalid').forEach(el=>el.classList.remove('invalid'));
+  setDataHoje();
+}
+async function novoRelatorio(){
+  if(!activeServicoId){ openServicoModal(true); return; }
+  if(!confirm('Iniciar um novo relatório? O rascunho atual não salvo será perdido.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  clearFormState();
+  await fetchNextFolha();
+  toast('Novo relatório iniciado');
+}
+
+document.addEventListener('input', (e)=>{
+  if(e.target.closest('#printArea')) saveDraft();
+});
+
+// ---------- Validação ----------
+const FIELD_LABELS = {
+  servico:'Serviço (carregue ou crie um)',
+  contratante:'Contratante', cliente:'Cliente', cidade:'Cidade', descricao:'Descrição',
+  atividades:'Registro de Atividade do Dia', pendencias:'Relatório de Pendências',
+  totalHoras:'Total de Horas', material:'Relação de Material (pelo menos 1 item)',
+  pessoal:'Relação de Pessoal (pelo menos 1 pessoa)', sig_empreita:'Assinatura — Empreita',
+  sig_cliente:'Assinatura — Cliente', sig_tecnico:'Assinatura — Técnico Responsável'
+};
+function validate(){
+  document.querySelectorAll('.invalid').forEach(el=>el.classList.remove('invalid'));
+  const missing = [];
+  if(!activeServicoId){
+    missing.push('servico');
+  }
+  const simpleFields = ['contratante','cliente','cidade','descricao','atividades','pendencias','totalHoras'];
+  simpleFields.forEach(id=>{
+    const val = document.getElementById(id).value.trim();
+    if(!val){
+      missing.push(id);
+      document.getElementById('f_'+id).classList.add('invalid');
+    }
+  });
+  const matRows = Array.from(document.querySelectorAll('#tblMaterial tbody tr'));
+  if(!matRows.some(tr=>tr.querySelector('.mat-desc').value.trim())){
+    missing.push('material');
+    document.getElementById('f_material').classList.add('invalid');
+  }
+  const pesRows = Array.from(document.querySelectorAll('#tblPessoal tbody tr'));
+  if(!pesRows.some(tr=>tr.querySelector('.p-nome').value.trim())){
+    missing.push('pessoal');
+    document.getElementById('f_pessoal').classList.add('invalid');
+  }
+  ['sig_empreita','sig_cliente','sig_tecnico'].forEach(id=>{
+    if(!sigHasDrawn[id]){
+      missing.push(id);
+      document.getElementById('f_'+id).classList.add('invalid');
+    }
+  });
+  return missing;
+}
+function showMissing(missing){
+  const banner = document.getElementById('missingBanner');
+  if(missing.length === 0){ banner.style.display = 'none'; return; }
+  banner.innerHTML = '⚠️ Preencha antes de salvar: ' + missing.map(m=>FIELD_LABELS[m]||m).join(', ');
+  banner.style.display = 'block';
+  banner.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+// ---------- Geração de PDF vetorial (1 página, layout fiel ao formulário em papel) ----------
+const PDF_MARGIN = 8;
+const PDF_PAGE_W = 210;
+const PDF_PAGE_H = 297;
+const PDF_CONTENT_W = PDF_PAGE_W - PDF_MARGIN * 2;
+const PDF_BAR_COLOR = [61, 75, 92];
+const PDF_LINE_COLOR = [200, 206, 213];
+const PDF_LABEL_COLOR = [90, 100, 112];
+const PDF_GAP = 2;
+const WEEKDAY_ORDER = [
+  {d:1,l:'S'},{d:2,l:'T'},{d:3,l:'Q'},{d:4,l:'Q'},{d:5,l:'S'},{d:6,l:'S'},{d:0,l:'D'}
+];
+
+function pdfSectionBar(pdf, y, label, height = 6){
+  pdf.setFillColor(...PDF_BAR_COLOR);
+  pdf.rect(PDF_MARGIN, y, PDF_CONTENT_W, height, 'F');
+  pdf.setTextColor(255,255,255);
+  pdf.setFont('helvetica','bold');
+  pdf.setFontSize(9);
+  pdf.text(label.toUpperCase(), PDF_MARGIN + 3, y + height/2, {baseline:'middle'});
+  pdf.setTextColor(20,20,20);
+  return y + height;
+}
+
+function pdfLabelRow(pdf, y, height, label, value){
+  pdf.setDrawColor(...PDF_LINE_COLOR);
+  pdf.setLineWidth(0.2);
+  pdf.setFont('helvetica','bold');
+  pdf.setFontSize(8);
+  pdf.setTextColor(...PDF_LABEL_COLOR);
+  pdf.text(label, PDF_MARGIN + 2, y + height/2, {baseline:'middle'});
+  const lw = pdf.getTextWidth(label) + 3;
+  pdf.setFont('helvetica','normal');
+  pdf.setFontSize(9.5);
+  pdf.setTextColor(20,20,20);
+  const maxW = PDF_CONTENT_W - lw - 4;
+  const lines = pdf.splitTextToSize(String(value || ''), maxW);
+  pdf.text(lines[0] || '', PDF_MARGIN + 2 + lw, y + height/2, {baseline:'middle'});
+  pdf.line(PDF_MARGIN, y + height, PDF_MARGIN + PDF_CONTENT_W, y + height);
+  return y + height;
+}
+
+function pdfFitText(pdf, text, maxWidth, maxHeight, startSize, minSize){
+  let size = startSize, lines = [];
+  while(size >= minSize){
+    pdf.setFontSize(size);
+    lines = pdf.splitTextToSize(String(text || ''), maxWidth);
+    const lineH = size * 0.3528 * 1.15;
+    if(lines.length * lineH <= maxHeight) return { lines, lineH };
+    size -= 0.5;
+  }
+  pdf.setFontSize(minSize);
+  const lineH = minSize * 0.3528 * 1.15;
+  const maxLines = Math.max(1, Math.floor(maxHeight / lineH));
+  lines = pdf.splitTextToSize(String(text || ''), maxWidth).slice(0, maxLines);
+  return { lines, lineH };
+}
+
+function pdfRuledBox(pdf, x, y, w, h, text){
+  pdf.setDrawColor(...PDF_LINE_COLOR);
+  pdf.setLineWidth(0.2);
+  pdf.rect(x, y, w, h);
+  const { lines, lineH } = pdfFitText(pdf, text, w - 4, h - 3, 9, 6.5);
+  pdf.setFont('helvetica','normal');
+  pdf.setTextColor(20,20,20);
+  let ly = y + lineH;
+  lines.forEach(line=>{ pdf.text(line, x + 2, ly); ly += lineH; });
+  return y + h;
+}
+
+function pdfTable(pdf, x, y, w, h, headers, colRatios, rows, emptyText){
+  const headerH = 5;
+  pdf.setDrawColor(...PDF_LINE_COLOR);
+  pdf.setLineWidth(0.2);
+  pdf.rect(x, y, w, h);
+  pdf.setFillColor(240,242,245);
+  pdf.rect(x, y, w, headerH, 'F');
+  pdf.line(x, y + headerH, x + w, y + headerH);
+
+  const colX = [x];
+  colRatios.forEach(r => colX.push(colX[colX.length-1] + w * r));
+
+  pdf.setFont('helvetica','bold');
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(...PDF_LABEL_COLOR);
+  headers.forEach((hd,i)=> pdf.text(hd, colX[i] + 2, y + headerH/2, {baseline:'middle'}));
+
+  const bodyRows = rows.length ? rows : [[emptyText || '—']];
+  const rowH = Math.min(6, Math.max(4.2, (h - headerH) / bodyRows.length));
+  pdf.setFont('helvetica','normal');
+  pdf.setFontSize(8);
+  pdf.setTextColor(20,20,20);
+  bodyRows.forEach((row, ri)=>{
+    const ry = y + headerH + ri * rowH;
+    if(ry + rowH > y + h + 0.5) return;
+    row.forEach((cell, ci)=>{
+      const cw = colX[ci+1] - colX[ci] - 3;
+      const txt = pdf.splitTextToSize(String(cell ?? ''), cw)[0] || '';
+      pdf.text(txt, colX[ci] + 2, ry + rowH/2, {baseline:'middle'});
+    });
+    if(ri > 0) pdf.line(x, ry, x + w, ry);
+  });
+  colX.slice(1,-1).forEach(cx => pdf.line(cx, y, cx, y + h));
+  return y + h;
+}
+
+function pdfCheckbox(pdf, x, y, size, checked, label){
+  pdf.setDrawColor(90,100,112);
+  pdf.setLineWidth(0.3);
+  pdf.setFillColor(...(checked ? PDF_BAR_COLOR : [255,255,255]));
+  pdf.rect(x, y, size, size, 'FD');
+  pdf.setFont('helvetica', checked ? 'bold' : 'normal');
+  pdf.setFontSize(8.5);
+  pdf.setTextColor(20,20,20);
+  pdf.text(label, x + size + 2, y + size - 0.5);
+}
+
+function pdfWeekday(pdf, x, y, w, h, selectedDay){
+  const boxW = w / 7;
+  WEEKDAY_ORDER.forEach((item, i)=>{
+    const bx = x + i * boxW;
+    const active = item.d === selectedDay;
+    pdf.setDrawColor(...PDF_LINE_COLOR);
+    pdf.setLineWidth(0.2);
+    pdf.setFillColor(...(active ? PDF_BAR_COLOR : [255,255,255]));
+    pdf.rect(bx, y, boxW, h, 'FD');
+    pdf.setTextColor(...(active ? [255,255,255] : [120,128,138]));
+    pdf.setFont('helvetica', active ? 'bold' : 'normal');
+    pdf.setFontSize(9);
+    pdf.text(item.l, bx + boxW/2, y + h/2, {baseline:'middle', align:'center'});
+  });
+  pdf.setTextColor(20,20,20);
+}
+
+function loadImage(src){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=> resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function pdfNewPhotoPage(pdf, folha){
+  pdf.setDrawColor(150,155,162); pdf.setLineWidth(0.3);
+  pdf.rect(3, 3, PDF_PAGE_W - 6, PDF_PAGE_H - 6);
+  let y = PDF_MARGIN;
+  pdf.setFillColor(...PDF_BAR_COLOR);
+  pdf.rect(PDF_MARGIN, y, PDF_CONTENT_W, 8, 'F');
+  pdf.setTextColor(255,255,255); pdf.setFont('helvetica','bold'); pdf.setFontSize(10);
+  pdf.text(`REGISTRO FOTOGRÁFICO — FOLHA ${folha}`, PDF_MARGIN + 3, y + 4, {baseline:'middle'});
+  pdf.setTextColor(20,20,20);
+  return y + 8 + 4;
+}
+
+async function pdfPhotoCategory(pdf, y, title, list, folha){
+  const catBarH = 6;
+  if(y + catBarH > PDF_PAGE_H - PDF_MARGIN){ pdf.addPage(); y = pdfNewPhotoPage(pdf, folha); }
+  pdf.setFillColor(230,233,237);
+  pdf.rect(PDF_MARGIN, y, PDF_CONTENT_W, catBarH, 'F');
+  pdf.setDrawColor(...PDF_LINE_COLOR); pdf.setLineWidth(0.2);
+  pdf.rect(PDF_MARGIN, y, PDF_CONTENT_W, catBarH);
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(8.5); pdf.setTextColor(60,68,78);
+  pdf.text(title.toUpperCase(), PDF_MARGIN + 3, y + catBarH/2, {baseline:'middle'});
+  pdf.setTextColor(20,20,20);
+  y += catBarH + 2;
+
+  if(!list.length){
+    pdf.setFont('helvetica','italic'); pdf.setFontSize(8); pdf.setTextColor(150,155,162);
+    pdf.text('Nenhuma foto registrada.', PDF_MARGIN + 2, y + 4);
+    pdf.setTextColor(20,20,20);
+    return y + 10;
+  }
+
+  const cols = 3, gap = 3;
+  const boxW = (PDF_CONTENT_W - gap * (cols - 1)) / cols;
+  const boxH = 45;
+
+  for(let i = 0; i < list.length; i++){
+    const col = i % cols;
+    if(col === 0 && i > 0) y += boxH + gap;
+    if(y + boxH > PDF_PAGE_H - PDF_MARGIN){ pdf.addPage(); y = pdfNewPhotoPage(pdf, folha); }
+    const x = PDF_MARGIN + col * (boxW + gap);
+    pdf.setDrawColor(...PDF_LINE_COLOR); pdf.setLineWidth(0.2);
+    pdf.rect(x, y, boxW, boxH);
+    try{
+      const img = await loadImage(list[i]);
+      const ratio = Math.min((boxW - 2) / img.width, (boxH - 2) / img.height);
+      const dw = img.width * ratio, dh = img.height * ratio;
+      const dx = x + (boxW - dw) / 2, dy = y + (boxH - dh) / 2;
+      const fmt = list[i].indexOf('image/png') !== -1 ? 'PNG' : 'JPEG';
+      pdf.addImage(list[i], fmt, dx, dy, dw, dh);
+    }catch(e){ /* ignora foto que falhar ao carregar */ }
+  }
+  y += boxH + gap;
+  return y;
+}
+
+async function buildPdf(){
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p','mm','a4');
+  const d = collectData();
+  const tipo = d.tipo || 'Manutenção';
+  const folha = d.folha;
+  const dataFmt = d.data ? new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+  const selectedDay = d.data ? new Date(d.data + 'T00:00:00').getDay() : -1;
+
+  pdf.setDrawColor(150,155,162);
+  pdf.setLineWidth(0.3);
+  pdf.rect(3, 3, PDF_PAGE_W - 6, PDF_PAGE_H - 6);
+
+  let y = PDF_MARGIN;
+
+  // ---- Cabeçalho: empresa | tipo | folha/data ----
+  const headerH = 30;
+  const colCompanyW = PDF_CONTENT_W * 0.45;
+  const colTipoW = PDF_CONTENT_W * 0.28;
+  const colFolhaW = PDF_CONTENT_W - colCompanyW - colTipoW;
+  const xCompany = PDF_MARGIN, xTipo = xCompany + colCompanyW, xFolha = xTipo + colTipoW;
+
+  pdf.setDrawColor(...PDF_LINE_COLOR);
+  pdf.setLineWidth(0.3);
+  pdf.rect(xCompany, y, colCompanyW, headerH);
+  pdf.rect(xTipo, y, colTipoW, headerH);
+  pdf.rect(xFolha, y, colFolhaW, headerH);
+
+  pdf.setFont('helvetica','bold');
+  pdf.setFontSize(11);
+  pdf.setTextColor(20,20,20);
+  let ny = y + 5.5;
+  pdf.splitTextToSize('CDias Instalação e Manutenção de gases medicinais', colCompanyW - 4).forEach(l=>{
+    pdf.text(l, xCompany + 3, ny); ny += 4.6;
+  });
+  pdf.setFont('helvetica','normal');
+  pdf.setFontSize(8);
+  pdf.setTextColor(...PDF_LABEL_COLOR);
+  pdf.text('Fone: (61) 99290-3202', xCompany + 3, ny + 1.5);
+  pdf.text('cdiasinstalacoesdegases@gmail.com', xCompany + 3, ny + 6);
+
+  pdf.setFont('helvetica','bold');
+  pdf.setFontSize(8.5);
+  pdf.setTextColor(20,20,20);
+  pdf.text('RELATÓRIO DIÁRIO', xTipo + colTipoW/2, y + 6, {align:'center'});
+  pdf.text('DE OBRAS', xTipo + colTipoW/2, y + 10, {align:'center'});
+  pdfCheckbox(pdf, xTipo + 6, y + 15, 4, tipo === 'Manutenção', 'Manutenção');
+  pdfCheckbox(pdf, xTipo + 6, y + 22, 4, tipo === 'Obra', 'Obra');
+
+  pdf.setDrawColor(...PDF_LINE_COLOR);
+  pdf.line(xFolha, y + headerH/2, xFolha + colFolhaW, y + headerH/2);
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(7.5); pdf.setTextColor(...PDF_LABEL_COLOR);
+  pdf.text('FOLHA N°', xFolha + 3, y + 5);
+  pdf.text('DATA', xFolha + 3, y + headerH/2 + 5);
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(11); pdf.setTextColor(20,20,20);
+  pdf.text(String(folha || '----'), xFolha + 3, y + 12);
+  pdf.text(dataFmt || '--/--/----', xFolha + 3, y + headerH/2 + 12);
+
+  y += headerH;
+
+  // ---- Contratante + Dia da semana ----
+  const rowH1 = 9;
+  const diaW = 62;
+  const contW = PDF_CONTENT_W - diaW - 2;
+  pdf.setDrawColor(...PDF_LINE_COLOR); pdf.setLineWidth(0.2);
+  pdf.rect(PDF_MARGIN, y, contW, rowH1);
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(...PDF_LABEL_COLOR);
+  pdf.text('CONTRATANTE', PDF_MARGIN + 2, y + rowH1/2, {baseline:'middle'});
+  const lwC = pdf.getTextWidth('CONTRATANTE') + 3;
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(20,20,20);
+  const contratanteTxt = pdf.splitTextToSize(d.contratante || '', contW - lwC - 4)[0] || '';
+  pdf.text(contratanteTxt, PDF_MARGIN + 2 + lwC, y + rowH1/2, {baseline:'middle'});
+  pdfWeekday(pdf, PDF_MARGIN + contW + 2, y, diaW, rowH1, selectedDay);
+  y += rowH1;
+
+  // ---- Cliente / Cidade / Descrição ----
+  y = pdfLabelRow(pdf, y, 7, 'CLIENTE', d.cliente);
+  y = pdfLabelRow(pdf, y, 7, 'CIDADE', d.cidade);
+  y = pdfLabelRow(pdf, y, 7, 'DESCRIÇÃO', d.descricao);
+
+  // ---- Registro de Atividade do Dia ----
+  y = pdfSectionBar(pdf, y, 'Registro de Atividade do Dia');
+  y = pdfRuledBox(pdf, PDF_MARGIN, y, PDF_CONTENT_W, 53, d.atividades);
+  y += PDF_GAP;
+
+  // ---- Relação de Material Utilizado ----
+  y = pdfSectionBar(pdf, y, 'Relação de Material Utilizado');
+  const matRows = (d.material || [])
+    .filter(m => (m.desc || '').trim())
+    .map(m => [m.desc, m.qtd, formatValorUnid(m.valor, m.unid)]);
+  y = pdfTable(pdf, PDF_MARGIN, y, PDF_CONTENT_W, 28,
+    ['MATERIAL','QTD.','UNIDADE'], [0.5, 0.18, 0.32], matRows, 'Nenhum material informado');
+  y += PDF_GAP;
+
+  // ---- Relatório de Pendências ----
+  y = pdfSectionBar(pdf, y, 'Relatório de Pendências');
+  y = pdfRuledBox(pdf, PDF_MARGIN, y, PDF_CONTENT_W, 22, d.pendencias);
+  y += PDF_GAP;
+
+  // ---- Relação de Pessoal Efetivo da Obra ----
+  y = pdfSectionBar(pdf, y, 'Relação de Pessoal Efetivo da Obra');
+  const pesRows = (d.pessoal || [])
+    .filter(p => (p.nome || '').trim())
+    .map(p => [p.nome, p.funcao, p.das, p.as_]);
+  y = pdfTable(pdf, PDF_MARGIN, y, PDF_CONTENT_W, 24,
+    ['NOME','FUNÇÃO','DAS','ÀS'], [0.4, 0.3, 0.15, 0.15], pesRows, 'Nenhuma pessoa informada');
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(...PDF_LABEL_COLOR);
+  pdf.text('TOTAL DE HORAS (DIA):', PDF_MARGIN + 2, y + 5);
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(20,20,20);
+  pdf.text(String(d.totalHoras || ''), PDF_MARGIN + 2 + pdf.getTextWidth('TOTAL DE HORAS (DIA):') + 3, y + 5);
+  y += 8;
+
+  // ---- Assinaturas ----
+  y = pdfSectionBar(pdf, y, 'Assinaturas');
+  const sigGap = 4;
+  const sigColW = (PDF_CONTENT_W - sigGap * 2) / 3;
+  const sigDefs = [
+    { id:'sig_empreita', label:'EMPREITA' },
+    { id:'sig_cliente', label:'CLIENTE' },
+    { id:'sig_tecnico', label:'TÉCNICO RESPONSÁVEL' }
+  ];
+  const imgH = 22;
+  sigDefs.forEach((s, i)=>{
+    const sx = PDF_MARGIN + i * (sigColW + sigGap);
+    if(sigHasDrawn[s.id]){
+      try{
+        const dataUrl = sigCanvases[s.id].toDataURL('image/png');
+        pdf.addImage(dataUrl, 'PNG', sx + 2, y, sigColW - 4, imgH);
+      }catch(e){}
+    }
+    pdf.setDrawColor(...PDF_LINE_COLOR); pdf.setLineWidth(0.2);
+    pdf.line(sx, y + imgH + 2, sx + sigColW, y + imgH + 2);
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(7.5); pdf.setTextColor(...PDF_LABEL_COLOR);
+    pdf.text(s.label, sx + sigColW/2, y + imgH + 7, {align:'center'});
+  });
+  pdf.setTextColor(20,20,20);
+
+  pdf.setFont('helvetica','normal');
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(160,166,172);
+  pdf.text(`Gerado digitalmente em ${new Date().toLocaleString('pt-BR')} — RDO Digital C.Dias`, PDF_MARGIN, PDF_PAGE_H - 5);
+  pdf.setTextColor(20,20,20);
+
+  // ---- Página(s) de fotos (Antes / Durante / Depois) ----
+  const totalPhotos = (photos.antes||[]).length + (photos.durante||[]).length + (photos.depois||[]).length;
+  if(totalPhotos > 0){
+    pdf.addPage();
+    let py = pdfNewPhotoPage(pdf, folha);
+    py = await pdfPhotoCategory(pdf, py, 'Antes', photos.antes || [], folha);
+    py = await pdfPhotoCategory(pdf, py, 'Durante', photos.durante || [], folha);
+    py = await pdfPhotoCategory(pdf, py, 'Depois', photos.depois || [], folha);
+  }
+
+  const filename = `RDO_${folha}_${d.data || 'sem-data'}.pdf`;
+  const blob = pdf.output('blob');
+  const base64 = pdf.output('datauristring').split(',')[1];
+  return { pdf, blob, base64, filename };
+}
+async function gerarPreviewPDF(){
+  toast('Gerando pré-visualização...');
+  const { pdf, filename } = await buildPdf();
+  pdf.save('preview_' + filename);
+}
+
+// ---------- Salvar (com validação, backend, download automático e compartilhamento) ----------
+function downloadPdfLocal(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+async function salvarRDO(){
+  const missing = validate();
+  showMissing(missing);
+  if(missing.length > 0){
+    toast('Existem campos obrigatórios não preenchidos.');
+    if(missing.includes('servico')) openServicoModal(true);
+    return;
+  }
+  const btn = document.getElementById('btnSalvar');
+  btn.disabled = true;
+  btn.textContent = 'Gerando PDF...';
+  try{
+    const { blob, base64, filename } = await buildPdf();
+    const payload = collectData();
+    payload.pdf_base64 = base64;
+
+    btn.textContent = 'Salvando...';
+
+    let res, data, networkFailed = false;
+    try{
+      res = await fetch(API_BASE + '/api/rdos', {
+        method:'POST', headers: authHeaders(), body: JSON.stringify(payload)
+      });
+      data = await res.json();
+    }catch(netErr){
+      networkFailed = true;
+    }
+
+    if(networkFailed){
+      await queueOfflineRdo(payload);
+      downloadPdfLocal(blob, filename);
+      localStorage.removeItem(STORAGE_KEY);
+      updateSyncStatus();
+      toast('Sem internet — relatório salvo no dispositivo e será enviado ao servidor quando a conexão voltar.');
+      clearFormState();
+      await fetchNextFolha();
+      return;
+    }
+
+    if(!res.ok){
+      toast('Erro ao salvar: ' + (data.error || 'tente novamente'));
+      return;
+    }
+
+    // salva o PDF completo no dispositivo automaticamente
+    downloadPdfLocal(blob, filename);
+
+    lastGeneratedPdf = { blob, filename };
+    localStorage.removeItem(STORAGE_KEY);
+    if(activeServicoId) localStorage.setItem(folhaCacheKey(activeServicoId), String(data.folha));
+    toast(`Relatório salvo — Folha ${String(data.folha).padStart(4,'0')}`);
+    document.getElementById('shareHint').textContent =
+      `O PDF da folha ${String(data.folha).padStart(4,'0')} já foi salvo no seu dispositivo. Deseja compartilhar agora?`;
+    document.getElementById('shareOverlay').classList.remove('hidden');
+  }catch(e){
+    toast('Ocorreu um erro ao gerar/salvar o relatório.');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = '💾 Salvar Relatório';
+  }
+}
+
+async function shareNative(){
+  if(!lastGeneratedPdf) return;
+  const file = new File([lastGeneratedPdf.blob], lastGeneratedPdf.filename, {type:'application/pdf'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file], title:'Relatório Diário de Obra'});
+      closeShare();
+      return;
+    }catch(e){ /* usuário cancelou ou não suportado — cai no fallback abaixo */ }
+  }
+  toast('Compartilhamento direto não suportado neste navegador — use o WhatsApp.');
+}
+function shareWhats(){
+  const d = collectData();
+  const msg = `RDO Folha ${d.folha} — ${d.data}\nCliente: ${d.cliente}\nContratante: ${d.contratante}\nDescrição: ${d.descricao}\n\n(Anexe o PDF salvo no dispositivo)`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+function closeShare(){
+  document.getElementById('shareOverlay').classList.add('hidden');
+  clearFormState();
+  fetchNextFolha();
+}
+
+// ---------- Histórico ----------
+async function openHistory(){
+  document.getElementById('historyOverlay').classList.remove('hidden');
+  document.getElementById('historyHint').textContent = activeServicoId
+    ? `Folhas do serviço "${activeServicoNome}", visíveis em qualquer dispositivo.`
+    : 'Nenhum serviço ativo — mostrando folhas de todos os serviços.';
+  const list = document.getElementById('historyList');
+  list.innerHTML = '<div class="history-empty">Carregando...</div>';
+  try{
+    const url = activeServicoId
+      ? API_BASE + '/api/rdos?servico_id=' + activeServicoId
+      : API_BASE + '/api/rdos';
+    const res = await fetch(url, {headers: authHeaders(false)});
+    const rows = await res.json();
+    if(!res.ok) throw new Error(rows.error || 'erro');
+    if(rows.length === 0){
+      list.innerHTML = '<div class="history-empty">Nenhum relatório salvo ainda.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    rows.forEach(r=>{
+      const div = document.createElement('div');
+      div.className = 'history-row';
+      div.innerHTML = `
+        <div>
+          <strong>Folha ${String(r.folha).padStart(4,'0')}</strong> — ${r.cliente || 'sem cliente'}
+          <div class="meta">${r.servico_nome ? r.servico_nome + ' · ' : ''}${r.data || ''} · ${r.tipo || ''} · ${r.contratante || ''} · por ${r.created_by || ''}</div>
+        </div>
+        <button class="btn-outline btn-sm" onclick="baixarHistorico(${r.id})">Baixar PDF</button>
+      `;
+      list.appendChild(div);
+    });
+  }catch(e){
+    list.innerHTML = '<div class="history-empty">Não foi possível carregar o histórico.</div>';
+  }
+}
+function closeHistory(){
+  document.getElementById('historyOverlay').classList.add('hidden');
+}
+async function baixarHistorico(id){
+  try{
+    const res = await fetch(API_BASE + '/api/rdos/' + id, {headers: authHeaders(false)});
+    const data = await res.json();
+    if(!res.ok || !data.pdf_base64){ toast('PDF não disponível para esta folha.'); return; }
+    const byteChars = atob(data.pdf_base64);
+    const bytes = new Uint8Array(byteChars.length);
+    for(let i=0;i<byteChars.length;i++) bytes[i] = byteChars.charCodeAt(i);
+    const blob = new Blob([bytes], {type:'application/pdf'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `RDO_${String(data.folha).padStart(4,'0')}.pdf`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }catch(e){
+    toast('Erro ao baixar PDF.');
+  }
+}
+
+// ---------- Init ----------
+async function initApp(){
+  initSig('sig_empreita');
+  initSig('sig_cliente');
+  initSig('sig_tecnico');
+
+  const hadDraft = loadDraft();
+  if(!hadDraft){
+    addMaterialRow();
+    addPessoalRow();
+    setDataHoje();
+  }
+
+  const hasServico = restoreActiveServico();
+  if(hasServico){
+    await fetchNextFolha();
+  } else {
+    document.getElementById('folha').value = '----';
+    openServicoModal(false);
+  }
+}
+
+window.addEventListener('load', async ()=>{
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+  updateSyncStatus();
+  const ok = await checkSession();
+  if(ok){
+    initApp();
+    trySyncQueue(false);
+  }
+});
+</script>
+</body>
+</html>
