@@ -422,8 +422,8 @@
     <h2>Relatório salvo ✅</h2>
     <p class="hint" id="shareHint">O PDF já foi salvo no seu dispositivo. Deseja compartilhar agora?</p>
     <div class="modal-actions" style="justify-content:stretch;flex-direction:column;">
-      <button class="btn-primary" onclick="shareNative()">Compartilhar</button>
-      <button class="btn-outline" onclick="shareWhats()">Compartilhar via WhatsApp</button>
+      <button class="btn-primary" onclick="shareNative()">📤 Compartilhar PDF</button>
+      <button class="btn-outline" onclick="shareWhats()">📱 Enviar por WhatsApp</button>
       <button class="btn-outline" onclick="closeShare()">Fechar</button>
     </div>
   </div>
@@ -2009,21 +2009,42 @@ async function salvarRDO(){
   }
 }
 
-async function shareNative(){
-  if(!lastGeneratedPdf) return;
-  const file = new File([lastGeneratedPdf.blob], lastGeneratedPdf.filename, {type:'application/pdf'});
-  if(navigator.canShare && navigator.canShare({files:[file]})){
-    try{
-      await navigator.share({files:[file], title:'Relatório Diário de Obra'});
-      closeShare();
-      return;
-    }catch(e){ /* usuário cancelou ou não suportado — cai no fallback abaixo */ }
-  }
-  toast('Compartilhamento direto não suportado neste navegador — use o WhatsApp.');
-}
-function shareWhats(){
+function shareSummaryText(){
   const d = collectData();
-  const msg = `RDO Folha ${d.folha} — ${d.data}\nCliente: ${d.cliente}\nContratante: ${d.contratante}\nDescrição: ${d.descricao}\n\n(Anexe o PDF salvo no dispositivo)`;
+  return `RDO Folha ${d.folha} — ${d.data}\nCliente: ${d.cliente}\nContratante: ${d.contratante}`;
+}
+
+// Tenta anexar o PDF de verdade (não só uma mensagem de texto) usando o menu
+// nativo de compartilhar do celular — nesse menu o WhatsApp (e Email, Drive etc.)
+// já aparece como opção, e o arquivo vai junto, pronto pra enviar. Isso evita o
+// usuário precisar sair procurando o PDF nos "Arquivos"/"Downloads" pra anexar
+// na mão. Retorna true se conseguiu abrir o menu (mesmo que o usuário cancele
+// depois), false só quando o navegador realmente não suporta compartilhar arquivo.
+async function shareFileNative(){
+  if(!lastGeneratedPdf) return false;
+  const file = new File([lastGeneratedPdf.blob], lastGeneratedPdf.filename, {type:'application/pdf'});
+  if(!(navigator.canShare && navigator.canShare({files:[file]}))) return false;
+  try{
+    await navigator.share({files:[file], title:'Relatório Diário de Obra', text: shareSummaryText()});
+  }catch(e){ /* usuário cancelou o menu — sem problema, não é erro */ }
+  return true;
+}
+
+async function shareNative(){
+  const ok = await shareFileNative();
+  if(ok){ closeShare(); return; }
+  toast('Este navegador não permite anexar o PDF direto — abrindo o WhatsApp com o texto (anexe o PDF salvo no dispositivo manualmente).');
+  shareWhatsTextFallback();
+}
+
+async function shareWhats(){
+  const ok = await shareFileNative();
+  if(ok){ closeShare(); return; }
+  shareWhatsTextFallback();
+}
+
+function shareWhatsTextFallback(){
+  const msg = shareSummaryText() + '\n\n(O PDF já foi salvo no seu dispositivo — anexe-o manualmente nesta conversa.)';
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 function closeShare(){
