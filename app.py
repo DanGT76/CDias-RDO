@@ -1,18 +1,22 @@
 import os
-import sqlite3
 import threading
 import uuid
 import json
 from datetime import datetime, timedelta
 from functools import wraps
 
+import psycopg2
+import psycopg2.extras
 from flask import Flask, request, jsonify, send_from_directory, g
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "rdo.db")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
+
+# Connection string do Postgres (ex.: Neon). Definida como variável de ambiente
+# no Render — nunca deixar hardcoded aqui.
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 TOKEN_TTL_DAYS = 30
 DEFAULT_ADMIN_USER = "admin"
@@ -21,15 +25,18 @@ DEFAULT_ADMIN_PASS = "CDias123"
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="")
 CORS(app)
 
-# Guards folha numbering against races when two devices save at the same time.
+# Protege a numeração da folha contra corrida quando dois dispositivos salvam ao
+# mesmo tempo. Só é eficaz com 1 worker do gunicorn (ver Procfile/render.yaml) —
+# com múltiplos workers cada processo teria seu próprio lock.
 write_lock = threading.Lock()
 
 
 def get_db():
     db = getattr(g, "_db", None)
     if db is None:
-        db = g._db = sqlite3.connect(DB_PATH, check_same_thread=False)
-        db.row_factory = sqlite3.Row
+        db = g._db = psycopg2.connect(
+            DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor
+        )
     return db
 
 
@@ -41,25 +48,30 @@ def close_db(exception=None):
 
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute(
+    if not DATABASE_URL:
+        raise RuntimeError(
+            "DATABASE_URL não definida. Configure a connection string do Postgres "
+            "(ex.: Neon) nas variáveis de ambiente."
+        )
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    cur.execute(
         """CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL
         )"""
     )
-    conn.execute(
+    cur.execute(
         """CREATE TABLE IF NOT EXISTS sessions (
             token TEXT PRIMARY KEY,
             username TEXT NOT NULL,
             created_at TEXT NOT NULL
         )"""
     )
-    conn.execute(
+    cur.execute(
         """CREATE TABLE IF NOT EXISTS servicos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             nome TEXT NOT NULL,
             cliente TEXT,
             contratante TEXT,
@@ -68,9 +80,9 @@ def init_db():
             created_at TEXT
         )"""
     )
-    conn.execute(
+    cur.execute(
         """CREATE TABLE IF NOT EXISTS rdos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             servico_id INTEGER,
             folha INTEGER NOT NULL,
             tipo TEXT,
@@ -93,18 +105,14 @@ def init_db():
             created_at TEXT
         )"""
     )
-    # migração leve para bancos criados antes da coluna existir
-    try:
-        conn.execute("ALTER TABLE rdos ADD COLUMN servico_id INTEGER")
-    except sqlite3.OperationalError:
-        pass
-    cur = conn.execute("SELECT COUNT(*) AS c FROM users")
-    if cur.fetchone()["c"] == 0:
-        conn.execute(
-            "INSERT INTO users (username, password_hash) VALUES (?, ?)",
-            (DEFAULT_ADMIN_USER, generate_password_hash(DEFAULT_ADMIN_PASS)),
-        )
+    cur.execute(
+        """INSERT INTO users (username, password_hash)
+           SELECT %s, %s
+           WHERE NOT EXISTS (SELECT 1 FROM users)""",
+        (DEFAULT_ADMIN_USER, generate_password_hash(DEFAULT_ADMIN_PASS)),
+    )
     conn.commit()
+    cur.close()
     conn.close()
 
 
@@ -116,12 +124,14 @@ def require_auth(f):
         if not token:
             return jsonify({"error": "Não autenticado"}), 401
         db = get_db()
-        row = db.execute("SELECT * FROM sessions WHERE token = ?", (token,)).fetchone()
+        cur = db.cursor()
+        cur.execute("SELECT * FROM sessions WHERE token = %s", (token,))
+        row = cur.fetchone()
         if not row:
             return jsonify({"error": "Sessão inválida"}), 401
         created = datetime.fromisoformat(row["created_at"])
         if datetime.utcnow() - created > timedelta(days=TOKEN_TTL_DAYS):
-            db.execute("DELETE FROM sessions WHERE token = ?", (token,))
+            cur.execute("DELETE FROM sessions WHERE token = %s", (token,))
             db.commit()
             return jsonify({"error": "Sessão expirada"}), 401
         g.username = row["username"]
@@ -141,12 +151,14 @@ def login():
     username = (data.get("username") or "").strip()
     password = data.get("password") or ""
     db = get_db()
-    row = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+    cur = db.cursor()
+    cur.execute("SELECT * FROM users WHERE username = %s", (username,))
+    row = cur.fetchone()
     if not row or not check_password_hash(row["password_hash"], password):
         return jsonify({"error": "Usuário ou senha inválidos"}), 401
     token = uuid.uuid4().hex
-    db.execute(
-        "INSERT INTO sessions (token, username, created_at) VALUES (?, ?, ?)",
+    cur.execute(
+        "INSERT INTO sessions (token, username, created_at) VALUES (%s, %s, %s)",
         (token, username, datetime.utcnow().isoformat()),
     )
     db.commit()
@@ -159,7 +171,8 @@ def logout():
     auth = request.headers.get("Authorization", "")
     token = auth.split("Bearer ")[-1].strip()
     db = get_db()
-    db.execute("DELETE FROM sessions WHERE token = ?", (token,))
+    cur = db.cursor()
+    cur.execute("DELETE FROM sessions WHERE token = %s", (token,))
     db.commit()
     return jsonify({"ok": True})
 
@@ -178,10 +191,11 @@ def create_servico():
     if not nome:
         return jsonify({"error": "Nome do serviço é obrigatório"}), 400
     db = get_db()
+    cur = db.cursor()
     now = datetime.utcnow().isoformat()
-    cur = db.execute(
+    cur.execute(
         "INSERT INTO servicos (nome, cliente, contratante, cidade, created_by, created_at) "
-        "VALUES (?,?,?,?,?,?)",
+        "VALUES (%s,%s,%s,%s,%s,%s) RETURNING id",
         (
             nome,
             payload.get("cliente"),
@@ -191,9 +205,10 @@ def create_servico():
             now,
         ),
     )
+    new_id = cur.fetchone()["id"]
     db.commit()
     return jsonify({
-        "id": cur.lastrowid,
+        "id": new_id,
         "nome": nome,
         "cliente": payload.get("cliente"),
         "contratante": payload.get("contratante"),
@@ -205,14 +220,16 @@ def create_servico():
 @require_auth
 def list_servicos():
     db = get_db()
-    rows = db.execute(
+    cur = db.cursor()
+    cur.execute(
         """SELECT s.id, s.nome, s.cliente, s.contratante, s.cidade,
                   s.created_by, s.created_at, COUNT(r.id) AS total_folhas
            FROM servicos s
            LEFT JOIN rdos r ON r.servico_id = s.id
            GROUP BY s.id
            ORDER BY s.created_at DESC"""
-    ).fetchall()
+    )
+    rows = cur.fetchall()
     return jsonify([dict(r) for r in rows])
 
 
@@ -220,7 +237,9 @@ def list_servicos():
 @require_auth
 def get_servico(servico_id):
     db = get_db()
-    row = db.execute("SELECT * FROM servicos WHERE id = ?", (servico_id,)).fetchone()
+    cur = db.cursor()
+    cur.execute("SELECT * FROM servicos WHERE id = %s", (servico_id,))
+    row = cur.fetchone()
     if not row:
         return jsonify({"error": "Serviço não encontrado"}), 404
     return jsonify(dict(row))
@@ -233,9 +252,9 @@ def next_folha():
     if not servico_id:
         return jsonify({"error": "servico_id é obrigatório"}), 400
     db = get_db()
-    row = db.execute(
-        "SELECT MAX(folha) AS m FROM rdos WHERE servico_id = ?", (servico_id,)
-    ).fetchone()
+    cur = db.cursor()
+    cur.execute("SELECT MAX(folha) AS m FROM rdos WHERE servico_id = %s", (servico_id,))
+    row = cur.fetchone()
     nxt = (row["m"] or 0) + 1
     return jsonify({"folha": nxt})
 
@@ -245,17 +264,17 @@ def next_folha():
 def list_rdos():
     servico_id = request.args.get("servico_id", type=int)
     db = get_db()
+    cur = db.cursor()
     base_query = (
         "SELECT r.id, r.folha, r.data, r.tipo, r.cliente, r.contratante, "
         "r.created_by, r.created_at, r.servico_id, s.nome AS servico_nome "
         "FROM rdos r LEFT JOIN servicos s ON s.id = r.servico_id "
     )
     if servico_id:
-        rows = db.execute(
-            base_query + "WHERE r.servico_id = ? ORDER BY r.folha DESC", (servico_id,)
-        ).fetchall()
+        cur.execute(base_query + "WHERE r.servico_id = %s ORDER BY r.folha DESC", (servico_id,))
     else:
-        rows = db.execute(base_query + "ORDER BY r.created_at DESC").fetchall()
+        cur.execute(base_query + "ORDER BY r.created_at DESC")
+    rows = cur.fetchall()
     return jsonify([dict(r) for r in rows])
 
 
@@ -263,7 +282,9 @@ def list_rdos():
 @require_auth
 def get_rdo(rdo_id):
     db = get_db()
-    row = db.execute("SELECT * FROM rdos WHERE id = ?", (rdo_id,)).fetchone()
+    cur = db.cursor()
+    cur.execute("SELECT * FROM rdos WHERE id = %s", (rdo_id,))
+    row = cur.fetchone()
     if not row:
         return jsonify({"error": "Não encontrado"}), 404
     d = dict(row)
@@ -275,12 +296,12 @@ def get_rdo(rdo_id):
     return jsonify(d)
 
 
+# "descricao" é opcional (ver static/index.html) — não entra na validação obrigatória.
 REQUIRED_FIELDS = [
     "data",
     "contratante",
     "cliente",
     "cidade",
-    "descricao",
     "atividades",
     "pendencias",
     "totalHoras",
@@ -321,21 +342,22 @@ def create_rdo():
 
     with write_lock:
         db = get_db()
-        srow = db.execute("SELECT id FROM servicos WHERE id = ?", (servico_id,)).fetchone()
+        cur = db.cursor()
+        cur.execute("SELECT id FROM servicos WHERE id = %s", (servico_id,))
+        srow = cur.fetchone()
         if not srow:
             return jsonify({"error": "Serviço inválido", "missing": ["servico"]}), 400
-        row = db.execute(
-            "SELECT MAX(folha) AS m FROM rdos WHERE servico_id = ?", (servico_id,)
-        ).fetchone()
-        folha = (row["m"] or 0) + 1
+        cur.execute("SELECT MAX(folha) AS m FROM rdos WHERE servico_id = %s", (servico_id,))
+        folha = (cur.fetchone()["m"] or 0) + 1
         now = datetime.utcnow().isoformat()
-        cur = db.execute(
+        cur.execute(
             """INSERT INTO rdos (
                 servico_id, folha, tipo, data, contratante, cliente, cidade, descricao,
                 atividades, pendencias, total_horas, gps_lat, gps_lng,
                 material_json, pessoal_json, photos_json, signatures_json,
                 pdf_base64, created_by, created_at
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id""",
             (
                 servico_id,
                 folha,
@@ -359,12 +381,17 @@ def create_rdo():
                 now,
             ),
         )
+        new_id = cur.fetchone()["id"]
         db.commit()
-        new_id = cur.lastrowid
 
     return jsonify({"id": new_id, "folha": folha, "servico_id": servico_id, "created_at": now})
 
 
-if __name__ == "__main__":
+# Cria as tabelas (se não existirem) assim que o módulo é importado — necessário
+# porque em produção quem sobe o app é o gunicorn (ver Procfile), que nunca
+# executa o bloco "if __name__ == '__main__'" abaixo.
+if DATABASE_URL:
     init_db()
+
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
