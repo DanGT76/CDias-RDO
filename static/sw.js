@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rdo-shell-v1';
+const CACHE_NAME = 'rdo-shell-v2';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -42,18 +42,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Network-first: sempre tenta buscar a versão mais nova primeiro (assim toda
+  // correção aparece de imediato) e só usa o cache como reserva se estiver
+  // offline. Antes era cache-first, e por isso os últimos ajustes pareciam não
+  // "pegar" no celular — o app mostrava a versão salva antes de checar a nova.
   event.respondWith(
-    caches.match(req).then((cached) => {
-      const networkFetch = fetch(req)
-        .then((res) => {
-          if (res && res.status === 200) {
-            const resClone = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || networkFetch;
-    })
+    fetch(req)
+      .then((res) => {
+        if (res && res.status === 200) {
+          const resClone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
+        }
+        return res;
+      })
+      .catch(() => caches.match(req))
   );
 });
