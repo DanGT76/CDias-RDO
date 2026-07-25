@@ -319,8 +319,10 @@ def create_rdo():
     if not servico_id:
         missing.append("servico")
 
+    # Lista de material vazia = serviço sem material (válido). Só exigimos
+    # descrição preenchida quando existe pelo menos uma linha na lista.
     material = payload.get("material") or []
-    if not any((m.get("desc") or "").strip() for m in material):
+    if material and not any((m.get("desc") or "").strip() for m in material):
         missing.append("material")
 
     pessoal = payload.get("pessoal") or []

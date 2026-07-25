@@ -1540,8 +1540,11 @@ function validate(){
       document.getElementById('f_'+id).classList.add('invalid');
     }
   });
+  // Se todas as linhas de material foram removidas (✕), consideramos que o
+  // serviço realmente não usou material — não é obrigatório preencher.
+  // Só cobramos preenchimento se ainda existir alguma linha na tabela.
   const matRows = Array.from(document.querySelectorAll('#tblMaterial tbody tr'));
-  if(!matRows.some(tr=>tr.querySelector('.mat-desc').value.trim())){
+  if(matRows.length > 0 && !matRows.some(tr=>tr.querySelector('.mat-desc').value.trim())){
     missing.push('material');
     document.getElementById('f_material').classList.add('invalid');
   }
