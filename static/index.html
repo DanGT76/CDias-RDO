@@ -294,17 +294,21 @@
     height:130px;
     touch-action:none;
     background:#fff;
-    cursor:pointer;
   }
   .sig-block.invalid canvas{border-color:var(--danger);}
   .sig-block .name{font-size:12px;font-weight:700;color:var(--muted);margin-top:6px;text-transform:uppercase;}
-  .sig-actions{margin-top:6px;}
+  .sig-actions{margin-top:6px;display:flex;gap:6px;}
+  .sig-actions button{flex:1;}
 
   .sig-modal{max-width:640px;}
+  .sig-modal h2{margin-bottom:2px;}
+  .sig-modal p.hint{margin-bottom:10px;}
+  .sig-modal .modal-actions{margin-top:10px;}
   .sig-modal-canvas{
     width:100%;
-    height:55vh;
-    min-height:220px;
+    height:32vh;
+    min-height:150px;
+    max-height:260px;
     border:1px solid var(--border);
     border-radius:8px;
     background:#fff;
@@ -384,7 +388,7 @@
     .overlay{padding:10px;}
     .history-row{flex-wrap:wrap;}
     .weekday-row span{width:30px;height:30px;font-size:12px;}
-    .sig-modal-canvas{height:45vh;}
+    .sig-modal-canvas{height:26vh;min-height:130px;}
   }
 </style>
 </head>
@@ -553,7 +557,7 @@
       <div class="grid grid-2" style="margin-top:12px;">
         <div class="field" id="f_cidade"><label>Cidade</label><input id="cidade" type="text"></div>
         <div class="field" id="f_descricao">
-          <label>Descrição</label>
+          <label>Descrição <span style="font-weight:400;color:var(--muted);">(opcional)</span></label>
           <input id="descricao" type="text" placeholder="Resumo do serviço">
         </div>
       </div>
@@ -600,19 +604,19 @@
         <div class="photo-zone">
           <h4>Antes</h4>
           <button class="btn-outline btn-sm" onclick="document.getElementById('foto_antes').click()">📷 Adicionar foto</button>
-          <input type="file" id="foto_antes" accept="image/*" capture="environment" multiple onchange="addPhotos('antes',this)">
+          <input type="file" id="foto_antes" accept="image/*" multiple onchange="addPhotos('antes',this)">
           <div class="thumbs" id="thumbs_antes"></div>
         </div>
         <div class="photo-zone">
           <h4>Durante</h4>
           <button class="btn-outline btn-sm" onclick="document.getElementById('foto_durante').click()">📷 Adicionar foto</button>
-          <input type="file" id="foto_durante" accept="image/*" capture="environment" multiple onchange="addPhotos('durante',this)">
+          <input type="file" id="foto_durante" accept="image/*" multiple onchange="addPhotos('durante',this)">
           <div class="thumbs" id="thumbs_durante"></div>
         </div>
         <div class="photo-zone">
           <h4>Depois</h4>
           <button class="btn-outline btn-sm" onclick="document.getElementById('foto_depois').click()">📷 Adicionar foto</button>
-          <input type="file" id="foto_depois" accept="image/*" capture="environment" multiple onchange="addPhotos('depois',this)">
+          <input type="file" id="foto_depois" accept="image/*" multiple onchange="addPhotos('depois',this)">
           <div class="thumbs" id="thumbs_depois"></div>
         </div>
       </div>
@@ -624,17 +628,26 @@
         <div class="sig-block" id="f_sig_empreita">
           <canvas id="sig_empreita"></canvas>
           <div class="name">Empreita</div>
-          <div class="sig-actions"><button class="btn-outline btn-sm" onclick="clearSig('sig_empreita')">Limpar</button></div>
+          <div class="sig-actions">
+            <button class="btn-primary btn-sm" onclick="openSigModal('sig_empreita')">✍️ Assinar</button>
+            <button class="btn-outline btn-sm" onclick="clearSig('sig_empreita')">Limpar</button>
+          </div>
         </div>
         <div class="sig-block" id="f_sig_cliente">
           <canvas id="sig_cliente"></canvas>
           <div class="name">Cliente</div>
-          <div class="sig-actions"><button class="btn-outline btn-sm" onclick="clearSig('sig_cliente')">Limpar</button></div>
+          <div class="sig-actions">
+            <button class="btn-primary btn-sm" onclick="openSigModal('sig_cliente')">✍️ Assinar</button>
+            <button class="btn-outline btn-sm" onclick="clearSig('sig_cliente')">Limpar</button>
+          </div>
         </div>
         <div class="sig-block" id="f_sig_tecnico">
           <canvas id="sig_tecnico"></canvas>
           <div class="name">Técnico Responsável</div>
-          <div class="sig-actions"><button class="btn-outline btn-sm" onclick="clearSig('sig_tecnico')">Limpar</button></div>
+          <div class="sig-actions">
+            <button class="btn-primary btn-sm" onclick="openSigModal('sig_tecnico')">✍️ Assinar</button>
+            <button class="btn-outline btn-sm" onclick="clearSig('sig_tecnico')">Limpar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1145,24 +1158,26 @@ function renderThumbs(cat){
   });
 }
 
-// ---------- Assinaturas (canvas pequeno = preview; toque abre tela cheia) ----------
+// ---------- Assinaturas (canvas pequeno = só preview; botão "Assinar" abre tela cheia) ----------
 const sigCanvases = {};
 const sigHasDrawn = { sig_empreita:false, sig_cliente:false, sig_tecnico:false };
 const SIG_LABELS = { sig_empreita:'Empreita', sig_cliente:'Cliente', sig_tecnico:'Técnico Responsável' };
 
-const IS_TOUCH_DEVICE = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-
 function drawSigPlaceholder(canvas){
+  // O canvas pequeno é mantido SEM transformação de escala (ver initSig) — todo
+  // desenho nele (aqui, em confirmSigModal e em loadDraft) usa canvas.width/height
+  // diretamente, em pixels de dispositivo. Antes, um ctx.scale(ratio,ratio) ficava
+  // "grudado" no contexto e todo redesenho posterior saía deslocado/encolhido para
+  // o canto no celular (ratio alto), o que causava a assinatura "não centralizada".
   const ratio = window.devicePixelRatio || 1;
   const ctx = canvas.getContext('2d');
-  const w = canvas.width / ratio, h = canvas.height / ratio;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
   ctx.fillStyle = '#a7b3c0';
-  ctx.font = '13px Segoe UI, Arial, sans-serif';
+  ctx.font = (13 * ratio) + 'px Segoe UI, Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(IS_TOUCH_DEVICE ? '👆 Toque 2x para assinar' : '👆 Clique para assinar', w / 2, h / 2);
+  ctx.fillText('Nenhuma assinatura ainda', canvas.width / 2, canvas.height / 2);
   ctx.restore();
 }
 
@@ -1172,15 +1187,11 @@ function initSig(id){
   const rect = canvas.getBoundingClientRect();
   canvas.width = rect.width * ratio;
   canvas.height = rect.height * ratio;
-  canvas.getContext('2d').scale(ratio, ratio);
-  if(IS_TOUCH_DEVICE){
-    // No mobile, o primeiro toque muitas vezes "engole" o próprio gesto de assinar
-    // (o canvas do modal só existe depois que ele abre), então exige um duplo toque
-    // para abrir — o usuário assina de fato já dentro do modal.
-    canvas.addEventListener('dblclick', (e)=>{ e.preventDefault(); openSigModal(id); });
-  } else {
-    canvas.addEventListener('pointerdown', (e)=>{ e.preventDefault(); openSigModal(id); });
-  }
+  // Sem ctx.scale aqui — mantemos o contexto em pixels de dispositivo "puros",
+  // pois é assim que confirmSigModal() e loadDraft() desenham/recortam a assinatura.
+  // A abertura do modal de assinatura é feita só pelo botão "✍️ Assinar" (ver HTML) —
+  // usar toque/clique direto no canvas pequeno era pouco confiável no mobile, pois o
+  // primeiro toque "engolia" parte do próprio gesto de assinar antes do modal existir.
   sigCanvases[id] = canvas;
   drawSigPlaceholder(canvas);
 }
@@ -1273,6 +1284,48 @@ function closeSigModal(){
   sigModalTarget = null;
 }
 
+function trimCanvasToInk(canvas){
+  // Encontra o retângulo (em pixels do buffer) que realmente contém o traço desenhado,
+  // ignorando o fundo branco vazio ao redor — evita copiar a área inteira do canvas
+  // (que é bem maior/mais quadrada que o preview) e desalinhar a assinatura.
+  const w = canvas.width, h = canvas.height;
+  if(w === 0 || h === 0) return null;
+  let data;
+  try{ data = canvas.getContext('2d').getImageData(0, 0, w, h).data; }
+  catch(e){ return null; }
+  let minX = w, minY = h, maxX = -1, maxY = -1;
+  const step = 1;
+  for(let y = 0; y < h; y += step){
+    for(let x = 0; x < w; x += step){
+      const idx = (y * w + x) * 4;
+      const alpha = data[idx + 3];
+      if(alpha > 10 && (data[idx] < 250 || data[idx + 1] < 250 || data[idx + 2] < 250)){
+        if(x < minX) minX = x;
+        if(x > maxX) maxX = x;
+        if(y < minY) minY = y;
+        if(y > maxY) maxY = y;
+      }
+    }
+  }
+  if(maxX < minX || maxY < minY) return null;
+  return { x:minX, y:minY, w:(maxX - minX + 1), h:(maxY - minY + 1) };
+}
+
+function trimSigForExport(id){
+  // Usado só na geração do PDF: recorta a assinatura salva (canvas pequeno) só
+  // com a tinta, sem o espaço em branco ao redor, para poder encostá-la em cima
+  // da linha de assinatura ao invés de flutuar centralizada numa caixa alta.
+  const canvas = sigCanvases[id];
+  if(!canvas) return null;
+  const box = trimCanvasToInk(canvas);
+  if(!box) return null;
+  const out = document.createElement('canvas');
+  out.width = box.w;
+  out.height = box.h;
+  out.getContext('2d').drawImage(canvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+  return { dataUrl: out.toDataURL('image/png'), w: box.w, h: box.h };
+}
+
 function confirmSigModal(){
   const modalCanvas = document.getElementById('sigModalCanvas');
   const id = sigModalTarget;
@@ -1280,11 +1333,16 @@ function confirmSigModal(){
   const small = sigCanvases[id];
   const sctx = small.getContext('2d');
   sctx.clearRect(0, 0, small.width, small.height);
-  if(sigModalHasDrawn){
-    const scale = Math.min(small.width / modalCanvas.width, small.height / modalCanvas.height);
-    const dw = modalCanvas.width * scale, dh = modalCanvas.height * scale;
+  const box = sigModalHasDrawn ? trimCanvasToInk(modalCanvas) : null;
+  if(box){
+    const pad = Math.round(Math.min(box.w, box.h) * 0.12) + 6;
+    const sx = Math.max(0, box.x - pad), sy = Math.max(0, box.y - pad);
+    const sw = Math.min(modalCanvas.width - sx, box.w + pad * 2);
+    const sh = Math.min(modalCanvas.height - sy, box.h + pad * 2);
+    const scale = Math.min(small.width / sw, small.height / sh);
+    const dw = sw * scale, dh = sh * scale;
     const dx = (small.width - dw) / 2, dy = (small.height - dh) / 2;
-    sctx.drawImage(modalCanvas, dx, dy, dw, dh);
+    sctx.drawImage(modalCanvas, sx, sy, sw, sh, dx, dy, dw, dh);
     sigHasDrawn[id] = true;
   } else {
     drawSigPlaceholder(small);
@@ -1419,7 +1477,7 @@ function validate(){
   if(!activeServicoId){
     missing.push('servico');
   }
-  const simpleFields = ['contratante','cliente','cidade','descricao','atividades','pendencias','totalHoras'];
+  const simpleFields = ['contratante','cliente','cidade','atividades','pendencias','totalHoras'];
   simpleFields.forEach(id=>{
     const val = document.getElementById(id).value.trim();
     if(!val){
@@ -1775,16 +1833,27 @@ async function buildPdf(){
   const imgH = 22;
   sigDefs.forEach((s, i)=>{
     const sx = PDF_MARGIN + i * (sigColW + sigGap);
+    const lineY = y + imgH + 2;
     if(sigHasDrawn[s.id]){
       try{
-        const dataUrl = sigCanvases[s.id].toDataURL('image/png');
-        pdf.addImage(dataUrl, 'PNG', sx + 2, y, sigColW - 4, imgH);
+        // Recorta só a tinta (ignora o espaço em branco do canvas) e assenta a
+        // assinatura encostada em cima da linha, em vez de flutuar centralizada
+        // numa caixa alta acima dela.
+        const tight = trimSigForExport(s.id);
+        if(tight){
+          const maxW = sigColW - 4, maxH = imgH - 1;
+          const scale = Math.min(maxW / tight.w, maxH / tight.h);
+          const dw = tight.w * scale, dh = tight.h * scale;
+          const dx = sx + (sigColW - dw) / 2;
+          const dy = lineY - dh - 0.8;
+          pdf.addImage(tight.dataUrl, 'PNG', dx, dy, dw, dh);
+        }
       }catch(e){}
     }
     pdf.setDrawColor(...PDF_LINE_COLOR); pdf.setLineWidth(0.2);
-    pdf.line(sx, y + imgH + 2, sx + sigColW, y + imgH + 2);
+    pdf.line(sx, lineY, sx + sigColW, lineY);
     pdf.setFont('helvetica','bold'); pdf.setFontSize(7.5); pdf.setTextColor(...PDF_LABEL_COLOR);
-    pdf.text(s.label, sx + sigColW/2, y + imgH + 7, {align:'center'});
+    pdf.text(s.label, sx + sigColW/2, lineY + 5, {align:'center'});
   });
   pdf.setTextColor(20,20,20);
 
