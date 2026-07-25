@@ -282,6 +282,7 @@
     background:var(--bg);
   }
   .photo-zone h4{margin:0 0 8px;font-size:12px;color:var(--muted);text-transform:uppercase;}
+  .photo-zone .photo-buttons{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
   .photo-zone .thumbs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
   .photo-zone .thumbs img{width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);}
   .photo-zone input[type=file]{display:none;}
@@ -603,20 +604,32 @@
       <div class="photo-grid">
         <div class="photo-zone">
           <h4>Antes</h4>
-          <button class="btn-outline btn-sm" onclick="document.getElementById('foto_antes').click()">📷 Adicionar foto</button>
-          <input type="file" id="foto_antes" accept="image/*" multiple onchange="addPhotos('antes',this)">
+          <div class="photo-buttons">
+            <button class="btn-outline btn-sm" onclick="document.getElementById('foto_antes_cam').click()">📷 Tirar foto</button>
+            <button class="btn-outline btn-sm" onclick="document.getElementById('foto_antes_gal').click()">🖼️ Galeria</button>
+          </div>
+          <input type="file" id="foto_antes_cam" accept="image/*" capture="environment" onchange="addPhotos('antes',this)">
+          <input type="file" id="foto_antes_gal" accept="image/*" multiple onchange="addPhotos('antes',this)">
           <div class="thumbs" id="thumbs_antes"></div>
         </div>
         <div class="photo-zone">
           <h4>Durante</h4>
-          <button class="btn-outline btn-sm" onclick="document.getElementById('foto_durante').click()">📷 Adicionar foto</button>
-          <input type="file" id="foto_durante" accept="image/*" multiple onchange="addPhotos('durante',this)">
+          <div class="photo-buttons">
+            <button class="btn-outline btn-sm" onclick="document.getElementById('foto_durante_cam').click()">📷 Tirar foto</button>
+            <button class="btn-outline btn-sm" onclick="document.getElementById('foto_durante_gal').click()">🖼️ Galeria</button>
+          </div>
+          <input type="file" id="foto_durante_cam" accept="image/*" capture="environment" onchange="addPhotos('durante',this)">
+          <input type="file" id="foto_durante_gal" accept="image/*" multiple onchange="addPhotos('durante',this)">
           <div class="thumbs" id="thumbs_durante"></div>
         </div>
         <div class="photo-zone">
           <h4>Depois</h4>
-          <button class="btn-outline btn-sm" onclick="document.getElementById('foto_depois').click()">📷 Adicionar foto</button>
-          <input type="file" id="foto_depois" accept="image/*" multiple onchange="addPhotos('depois',this)">
+          <div class="photo-buttons">
+            <button class="btn-outline btn-sm" onclick="document.getElementById('foto_depois_cam').click()">📷 Tirar foto</button>
+            <button class="btn-outline btn-sm" onclick="document.getElementById('foto_depois_gal').click()">🖼️ Galeria</button>
+          </div>
+          <input type="file" id="foto_depois_cam" accept="image/*" capture="environment" onchange="addPhotos('depois',this)">
+          <input type="file" id="foto_depois_gal" accept="image/*" multiple onchange="addPhotos('depois',this)">
           <div class="thumbs" id="thumbs_depois"></div>
         </div>
       </div>
@@ -1133,16 +1146,58 @@ function addPessoalRow(nome='', funcao='', das='', as_=''){
 
 // ---------- Fotos ----------
 const photos = { antes:[], durante:[], depois:[] };
-function addPhotos(cat, input){
-  const files = Array.from(input.files || []);
-  files.forEach(file=>{
+
+// Lê o arquivo e "revela" a foto num canvas antes de guardar. Isso resolve o bug
+// de fotos aparecendo como null no celular: em vez de guardar o blob bruto da
+// câmera/galeria (que às vezes chega vazio/corrompido ou num formato — ex.: HEIC —
+// que o navegador não consegue exibir depois), a gente só aceita a foto se ela
+// realmente carregar como imagem, e já a redesenha comprimida (mais leve pro
+// localStorage, pro upload e pro PDF).
+function normalizePhoto(file){
+  return new Promise(resolve=>{
     const reader = new FileReader();
+    reader.onerror = ()=> resolve(null);
     reader.onload = e=>{
-      photos[cat].push(e.target.result);
-      renderThumbs(cat);
-      saveDraft();
+      const raw = e.target.result;
+      if(!raw){ resolve(null); return; }
+      const img = new Image();
+      img.onerror = ()=> resolve(null);
+      img.onload = ()=>{
+        try{
+          const maxDim = 1600;
+          let w = img.naturalWidth, h = img.naturalHeight;
+          if(!w || !h){ resolve(null); return; }
+          if(w > maxDim || h > maxDim){
+            const scale = Math.min(maxDim / w, maxDim / h);
+            w = Math.round(w * scale);
+            h = Math.round(h * scale);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        }catch(err){ resolve(null); }
+      };
+      img.src = raw;
     };
     reader.readAsDataURL(file);
+  });
+}
+
+function addPhotos(cat, input){
+  const files = Array.from(input.files || []);
+  let falhas = 0;
+  files.forEach(file=>{
+    normalizePhoto(file).then(dataUrl=>{
+      if(dataUrl){
+        photos[cat].push(dataUrl);
+        renderThumbs(cat);
+        saveDraft();
+      } else {
+        falhas++;
+        toast('Não foi possível carregar ' + (falhas > 1 ? 'uma das fotos' : 'a foto') + '. Tente novamente.');
+      }
+    });
   });
   input.value = '';
 }
