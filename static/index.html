@@ -2084,7 +2084,10 @@ async function openHistory(){
           <strong>Folha ${String(r.folha).padStart(4,'0')}</strong> — ${r.cliente || 'sem cliente'}
           <div class="meta">${r.servico_nome ? r.servico_nome + ' · ' : ''}${r.data || ''} · ${r.tipo || ''} · ${r.contratante || ''} · por ${r.created_by || ''}</div>
         </div>
-        <button class="btn-outline btn-sm" onclick="baixarHistorico(${r.id})">Baixar PDF</button>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="btn-outline btn-sm" onclick="baixarHistorico(${r.id})">Baixar PDF</button>
+          <button class="btn-outline btn-sm" onclick="compartilharHistorico(${r.id})">📤 Compartilhar</button>
+        </div>
       `;
       list.appendChild(div);
     });
@@ -2095,22 +2098,57 @@ async function openHistory(){
 function closeHistory(){
   document.getElementById('historyOverlay').classList.add('hidden');
 }
+async function fetchHistoricoPdf(id){
+  const res = await fetch(API_BASE + '/api/rdos/' + id, {headers: authHeaders(false)});
+  const data = await res.json();
+  if(!res.ok || !data.pdf_base64) return null;
+  const byteChars = atob(data.pdf_base64);
+  const bytes = new Uint8Array(byteChars.length);
+  for(let i=0;i<byteChars.length;i++) bytes[i] = byteChars.charCodeAt(i);
+  const blob = new Blob([bytes], {type:'application/pdf'});
+  const filename = `RDO_${String(data.folha).padStart(4,'0')}.pdf`;
+  return { blob, filename, data };
+}
+
 async function baixarHistorico(id){
   try{
-    const res = await fetch(API_BASE + '/api/rdos/' + id, {headers: authHeaders(false)});
-    const data = await res.json();
-    if(!res.ok || !data.pdf_base64){ toast('PDF não disponível para esta folha.'); return; }
-    const byteChars = atob(data.pdf_base64);
-    const bytes = new Uint8Array(byteChars.length);
-    for(let i=0;i<byteChars.length;i++) bytes[i] = byteChars.charCodeAt(i);
-    const blob = new Blob([bytes], {type:'application/pdf'});
-    const url = URL.createObjectURL(blob);
+    const pdf = await fetchHistoricoPdf(id);
+    if(!pdf){ toast('PDF não disponível para esta folha.'); return; }
+    const url = URL.createObjectURL(pdf.blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `RDO_${String(data.folha).padStart(4,'0')}.pdf`;
+    a.href = url; a.download = pdf.filename;
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }catch(e){
     toast('Erro ao baixar PDF.');
+  }
+}
+
+// Mesma lógica de "Compartilhar PDF" usada logo após salvar (ver shareFileNative),
+// só que buscando o PDF já salvo de uma folha antiga do histórico.
+async function compartilharHistorico(id){
+  try{
+    const pdf = await fetchHistoricoPdf(id);
+    if(!pdf){ toast('PDF não disponível para esta folha.'); return; }
+    const file = new File([pdf.blob], pdf.filename, {type:'application/pdf'});
+    const text = `RDO Folha ${pdf.data.folha} — ${pdf.data.data || ''}\nCliente: ${pdf.data.cliente || ''}\nContratante: ${pdf.data.contratante || ''}`;
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({files:[file], title:'Relatório Diário de Obra', text});
+      }catch(e){ /* usuário cancelou o menu — sem problema */ }
+      return;
+    }
+    // Fallback: baixa o PDF e abre o WhatsApp com o texto, já que o navegador
+    // não suporta anexar arquivo direto no compartilhamento.
+    const url = URL.createObjectURL(pdf.blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = pdf.filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    const msg = text + '\n\n(O PDF foi baixado no seu dispositivo — anexe-o manualmente nesta conversa.)';
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  }catch(e){
+    toast('Erro ao compartilhar PDF.');
   }
 }
 
